@@ -1,7 +1,9 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Tabs } from 'expo-router';
+import { ClipboardList, Folder } from 'lucide-react-native';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -10,6 +12,14 @@ export default function TabLayout() {
   const inactiveTintColor = colorScheme === 'dark' ? '#666' : '#999';
   const tabBarBg = colorScheme === 'dark' ? '#0a0a0a' : '#fafafa';
   const borderColor = colorScheme === 'dark' ? '#1f1f1f' : '#e5e5e5';
+  const insets = useSafeAreaInsets();
+
+  // Calculate responsive padding based on safe area insets
+  const baseHeight = Platform.OS === 'ios' ? 88 : 64;
+  const defaultBottomPadding = Platform.OS === 'ios' ? 24 : 0;
+  const bottomPadding = Math.max(insets.bottom, defaultBottomPadding);
+  // Adjust height to account for safe area insets
+  const extraPadding = bottomPadding - defaultBottomPadding;
 
   return (
     <Tabs
@@ -21,9 +31,9 @@ export default function TabLayout() {
           backgroundColor: tabBarBg,
           borderTopColor: borderColor,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          height: baseHeight + extraPadding,
+          paddingTop: 2,
+          paddingBottom: bottomPadding,
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -37,7 +47,7 @@ export default function TabLayout() {
           }),
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
           marginTop: 4,
         },
@@ -50,8 +60,13 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Issues',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="📋" color={color} focused={focused} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <TabIcon 
+              IconComponent={ClipboardList} 
+              color={color} 
+              focused={focused}
+              size={size || 24}
+            />
           ),
         }}
       />
@@ -59,31 +74,32 @@ export default function TabLayout() {
         name="explore"
         options={{
           title: 'Projects',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="📁" color={color} focused={focused} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <TabIcon 
+              IconComponent={Folder} 
+              color={color} 
+              focused={focused}
+              size={size || 24}
+            />
           ),
         }}
       />
     </Tabs>
   );
 }
+
 interface TabIconProps {
-  icon: string;
+  IconComponent: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
   color: string;
   focused: boolean;
+  size: number;
 }
 
-function TabIcon({ icon, focused }: TabIconProps) {
-  const { Text } = require('react-native');
-  
+function TabIcon({ IconComponent, color, focused, size }: TabIconProps) {
   return (
-    <Text
-      style={{
-        fontSize: focused ? 22 : 20,
-        opacity: focused ? 1 : 0.6,
-      }}
-    >
-      {icon}
-    </Text>
+    <IconComponent
+      size={focused ? size : size * 0.9}
+      color={color}
+    />
   );
 }
