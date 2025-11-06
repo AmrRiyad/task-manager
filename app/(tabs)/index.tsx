@@ -1,8 +1,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TabsAdvanced } from '@/components/ui/tabs';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { SquarePen } from 'lucide-react-native';
+import { Pencil, SquarePen, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -28,9 +29,11 @@ export default function HomeScreen() {
     status: 'todo' as 'todo' | 'in progress' | 'done',
   });
 
+  const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
+  const dividerColor = colorScheme === 'dark' ? '#2a2a2a' : '#e5e5e5';
 
   const openModal = (task?: Task) => {
     if (task) {
@@ -102,6 +105,29 @@ export default function HomeScreen() {
     ? tasks 
     : tasks.filter(t => t.status === statusFilter);
 
+  // Group tasks by status when showing all tasks
+  const groupedTasks = statusFilter === 'all' 
+    ? tasks.reduce((acc, task) => {
+        if (!acc[task.status]) {
+          acc[task.status] = [];
+        }
+        acc[task.status].push(task);
+        return acc;
+      }, {} as Record<string, Task[]>)
+    : null;
+
+  // Define status order for display
+  const statusOrder: Array<'todo' | 'in progress' | 'done'> = ['todo', 'in progress', 'done'];
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'todo': return 'Todo';
+      case 'in progress': return 'In Progress';
+      case 'done': return 'Done';
+      default: return status;
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor }]}>
       {/* Header */}
@@ -149,6 +175,33 @@ export default function HomeScreen() {
                 ? 'Tap the button to create your first task'
                 : 'Try selecting a different filter'}
             </ThemedText>
+          </View>
+        ) : statusFilter === 'all' && groupedTasks ? (
+          <View style={styles.section}>
+            {statusOrder.map((status) => {
+              const statusTasks = groupedTasks[status] || [];
+              if (statusTasks.length === 0) return null;
+              
+              return (
+                <View key={status} style={styles.statusGroup}>
+                  <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+                  <ThemedText style={styles.statusGroupTitle}>
+                    {getStatusLabel(status)}
+                  </ThemedText>
+                  {statusTasks.map(task => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onToggle={toggleTask}
+                      onEdit={openModal}
+                      onDelete={deleteTask}
+                      getPriorityColor={getPriorityColor}
+                      textColor={textColor}
+                    />
+                  ))}
+                </View>
+              );
+            })}
           </View>
         ) : (
           <View style={styles.section}>
@@ -299,18 +352,37 @@ interface TaskCardProps {
 
 function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColor }: TaskCardProps) {
   const isDone = task.status === 'done';
+  const backgroundColor = useThemeColor({}, 'background');
+  
+  const getStatusCircle = () => {
+    switch (task.status) {
+      case 'todo':
+        return (
+          <View style={styles.statusCircleTodo} />
+        );
+      case 'in progress':
+        return (
+          <View style={styles.statusCircleInProgress}>
+            <View style={[styles.statusCircleHalfFilled, { backgroundColor }]} />
+          </View>
+        );
+      case 'done':
+        return (
+          <View style={styles.statusCircleDone} />
+        );
+      default:
+        return <View style={styles.statusCircleTodo} />;
+    }
+  };
+
   return (
     <ThemedView style={styles.taskCard}>
       <View style={styles.taskHeader}>
         <TouchableOpacity
-          style={[
-            styles.checkbox,
-            isDone && styles.checkboxCompleted,
-            { borderColor: getPriorityColor(task.priority) }
-          ]}
           onPress={() => onToggle(task.id)}
+          style={styles.statusCircleContainer}
         >
-          {isDone && <ThemedText style={styles.checkmark}>✓</ThemedText>}
+          {getStatusCircle()}
         </TouchableOpacity>
         <View style={styles.taskContent}>
           <ThemedText
@@ -318,32 +390,11 @@ function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColo
               styles.taskTitle,
               isDone && styles.taskTitleCompleted
             ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {task.title}
           </ThemedText>
-          {task.description ? (
-            <ThemedText
-              style={[
-                styles.taskDescription,
-                isDone && styles.taskDescriptionCompleted
-              ]}
-              numberOfLines={2}
-            >
-              {task.description}
-            </ThemedText>
-          ) : null}
-          <View style={styles.taskMeta}>
-            <View style={[styles.statusBadge, { backgroundColor: task.status === 'todo' ? '#94a3b8' : task.status === 'in progress' ? '#3b82f6' : '#10b981' }]}>
-              <ThemedText style={styles.statusBadgeText}>
-                {task.status === 'in progress' ? 'In Progress' : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-              </ThemedText>
-            </View>
-            <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(task.priority) }]}>
-              <ThemedText style={styles.priorityBadgeText}>
-                {task.priority}
-              </ThemedText>
-            </View>
-          </View>
         </View>
       </View>
       <View style={styles.taskActions}>
@@ -351,13 +402,13 @@ function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColo
           style={styles.actionButton}
           onPress={() => onEdit(task)}
         >
-          <ThemedText style={styles.actionButtonText}>✏️</ThemedText>
+          <Pencil size={16} color={textColor} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => onDelete(task.id)}
         >
-          <ThemedText style={styles.actionButtonText}>🗑️</ThemedText>
+          <Trash2 size={16} color={textColor} />
         </TouchableOpacity>
       </View>
     </ThemedView>
@@ -421,12 +472,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
+  statusGroup: {
+    marginBottom: 16,
+  },
+  statusGroupTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    opacity: 0.6,
+    marginBottom: 8,
+  },
+  divider: {
+    height: 1,
+    marginBottom: 12,
+  },
   taskCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 10,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 8,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -442,84 +507,66 @@ const styles = StyleSheet.create({
   taskHeader: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginRight: 12,
+  statusCircleContainer: {
+    marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
-  checkboxCompleted: {
-    backgroundColor: '#4caf50',
-    borderColor: '#4caf50',
+  statusCircleTodo: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#999',
+    backgroundColor: 'transparent',
   },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+  statusCircleInProgress: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#fbbf24',
+    backgroundColor: '#fbbf24',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  statusCircleHalfFilled: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: '50%',
+    height: '100%',
+  },
+  statusCircleDone: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#10b981',
+    borderWidth: 0,
   },
   taskContent: {
     flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   taskTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '500',
+    flexShrink: 1,
   },
   taskTitleCompleted: {
     textDecorationLine: 'line-through',
     opacity: 0.5,
   },
-  taskDescription: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 8,
-  },
-  taskDescriptionCompleted: {
-    textDecorationLine: 'line-through',
-    opacity: 0.4,
-  },
-  taskMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  priorityBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
   taskActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   actionButton: {
-    padding: 8,
-  },
-  actionButtonText: {
-    fontSize: 18,
+    padding: 4,
   },
   modalOverlay: {
     flex: 1,
