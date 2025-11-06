@@ -4,6 +4,7 @@ import { TabsAdvanced } from '@/components/ui/tabs';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useToastController } from '@tamagui/toast';
+import { useRouter } from 'expo-router';
 import { Pencil, SquarePen, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
@@ -392,6 +393,7 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColor }: TaskCardProps) {
+  const router = useRouter();
   const isDone = task.status === 'done';
   const backgroundColor = useThemeColor({}, 'background');
   
@@ -416,6 +418,16 @@ function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColo
     }
   };
 
+  const handleCardPress = () => {
+    router.push({
+      pathname: '/task/[id]',
+      params: {
+        id: task.id,
+        task: JSON.stringify(task),
+      },
+    });
+  };
+
   return (
     <ThemedView style={styles.taskCard}>
       <View style={styles.taskHeader}>
@@ -425,7 +437,11 @@ function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColo
         >
           {getStatusCircle()}
         </TouchableOpacity>
-        <View style={styles.taskContent}>
+        <TouchableOpacity
+          style={styles.taskContent}
+          onPress={handleCardPress}
+          activeOpacity={0.7}
+        >
           <ThemedText
             style={[
               styles.taskTitle,
@@ -436,7 +452,7 @@ function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColo
           >
             {task.title}
           </ThemedText>
-        </View>
+        </TouchableOpacity>
       </View>
       <View style={styles.taskActions}>
         <TouchableOpacity
@@ -590,6 +606,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     marginRight: 8,
+    paddingVertical: 4,
   },
   taskTitle: {
     fontSize: 14,

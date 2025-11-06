@@ -1,11 +1,12 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
 
-import { AppToastProvider } from '@/components/toast';
+import { AppToastProvider } from '@/components/ui/toast';
+import { ThemeProvider, useTheme } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import config from '@/tamagui.config';
 
@@ -13,22 +14,36 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const colorScheme = useColorScheme();
+  const { effectiveTheme } = useTheme();
 
   return (
+    <TamaguiProvider 
+      config={config} 
+      defaultTheme={effectiveTheme === 'dark' ? 'dark' : 'light'}
+      key={effectiveTheme}
+    >
+      <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AppToastProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            <Stack.Screen name="task/[id]" options={{ headerShown: false, presentation: 'card' }} />
+          </Stack>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        </AppToastProvider>
+      </NavigationThemeProvider>
+    </TamaguiProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <SafeAreaProvider>
-      <TamaguiProvider config={config} defaultTheme={colorScheme === 'dark' ? 'dark' : 'light'}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AppToastProvider>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            </Stack>
-            <StatusBar style="auto" />
-          </AppToastProvider>
-        </ThemeProvider>
-      </TamaguiProvider>
+      <ThemeProvider>
+        <RootLayoutContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

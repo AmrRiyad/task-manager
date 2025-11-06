@@ -1,21 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
+import { useTheme } from '@/contexts/theme-context';
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web
+ * Web-specific implementation that supports static rendering.
+ * Re-calculates on the client side for web and uses theme context.
  */
-export function useColorScheme() {
+export function useColorScheme(): 'light' | 'dark' {
   const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
     setHasHydrated(true);
   }, []);
 
-  const colorScheme = useRNColorScheme();
-
-  if (hasHydrated) {
-    return colorScheme;
+  try {
+    const { effectiveTheme } = useTheme();
+    if (hasHydrated) {
+      return effectiveTheme;
+    }
+  } catch {
+    // Fallback during SSR or if context not available
   }
 
-  return 'light';
+  // Fallback to system preference during hydration
+  const systemScheme = useRNColorScheme();
+  return systemScheme === 'dark' ? 'dark' : 'light';
 }

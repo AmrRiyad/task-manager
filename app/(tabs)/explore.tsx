@@ -1,27 +1,26 @@
-import { StyleSheet, View, Platform, StatusBar, TouchableOpacity, ScrollView } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Moon, Sun, Monitor, Globe, ChevronRight } from 'lucide-react-native';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { ChevronRight, Monitor, Moon, Sun } from 'lucide-react-native';
 import { useState } from 'react';
+import { Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-type ThemeMode = 'light' | 'dark' | 'system';
 type Language = 'English' | 'Spanish' | 'French' | 'German' | 'Italian' | 'Portuguese' | 'Arabic' | 'Chinese' | 'Japanese';
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
+  const { themeMode, setThemeMode, isSystemMode } = useTheme();
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
   const borderColor = colorScheme === 'dark' ? '#2a2a2a' : '#e5e5e5';
   
-  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('English');
 
-  const handleThemeChange = (mode: ThemeMode) => {
-    setThemeMode(mode);
-    // TODO: Implement theme persistence and actual theme switching
+  const handleThemeChange = async (mode: 'light' | 'dark' | 'system') => {
+    await setThemeMode(mode);
   };
 
   const handleLanguageChange = (language: Language) => {
@@ -29,43 +28,7 @@ export default function SettingsScreen() {
     // TODO: Implement language persistence and i18n
   };
 
-  const SettingItem = ({ 
-    icon: Icon, 
-    title, 
-    subtitle, 
-    onPress, 
-    value 
-  }: { 
-    icon: any; 
-    title: string; 
-    subtitle?: string; 
-    onPress: () => void; 
-    value?: string;
-  }) => (
-    <TouchableOpacity
-      style={[styles.settingItem, { borderBottomColor: borderColor }]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={styles.settingItemLeft}>
-        <View style={[styles.iconContainer, { backgroundColor: tintColor + '20' }]}>
-          <Icon size={20} color={tintColor} />
-        </View>
-        <View style={styles.settingItemText}>
-          <ThemedText style={styles.settingItemTitle}>{title}</ThemedText>
-          {subtitle && (
-            <ThemedText style={styles.settingItemSubtitle}>{subtitle}</ThemedText>
-          )}
-        </View>
-      </View>
-      {value && (
-        <ThemedText style={styles.settingItemValue}>{value}</ThemedText>
-      )}
-      <ChevronRight size={20} color={textColor} opacity={0.4} />
-    </TouchableOpacity>
-  );
-
-  const ThemeOption = ({ mode, label, icon: Icon }: { mode: ThemeMode; label: string; icon: any }) => {
+  const ThemeOption = ({ mode, label, icon: Icon }: { mode: 'light' | 'dark' | 'system'; label: string; icon: any }) => {
     const isSelected = themeMode === mode;
     return (
       <TouchableOpacity
@@ -80,30 +43,6 @@ export default function SettingsScreen() {
         <Icon size={24} color={isSelected ? tintColor : textColor} />
         <ThemedText style={[styles.themeOptionLabel, isSelected && { color: tintColor }]}>
           {label}
-        </ThemedText>
-        {isSelected && (
-          <View style={[styles.checkmark, { backgroundColor: tintColor }]}>
-            <ThemedText style={styles.checkmarkText}>✓</ThemedText>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const LanguageOption = ({ language }: { language: Language }) => {
-    const isSelected = selectedLanguage === language;
-    return (
-      <TouchableOpacity
-        style={[
-          styles.languageOption,
-          isSelected && { backgroundColor: tintColor + '20', borderColor: tintColor },
-          { borderColor: borderColor }
-        ]}
-        onPress={() => handleLanguageChange(language)}
-        activeOpacity={0.7}
-      >
-        <ThemedText style={[styles.languageOptionText, isSelected && { color: tintColor, fontWeight: '600' }]}>
-          {language}
         </ThemedText>
         {isSelected && (
           <View style={[styles.checkmark, { backgroundColor: tintColor }]}>
@@ -254,36 +193,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-  },
-  settingItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  settingItemText: {
-    flex: 1,
-  },
-  settingItemTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  settingItemSubtitle: {
-    fontSize: 13,
-    opacity: 0.6,
-  },
-  settingItemValue: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginRight: 8,
   },
 });
