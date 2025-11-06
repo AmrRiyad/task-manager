@@ -144,22 +144,6 @@ export default function SettingsScreen() {
             <ThemeOption mode="system" label="System" icon={Monitor} />
           </View>
         </View>
-
-        {/* Language Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: tintColor + '20' }]}>
-              <Globe size={18} color={tintColor} />
-            </View>
-            <ThemedText style={styles.sectionTitle}>Language</ThemedText>
-          </View>
-          
-          <View style={styles.languageOptions}>
-            {(['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Arabic', 'Chinese', 'Japanese'] as Language[]).map((lang) => (
-              <LanguageOption key={lang} language={lang} />
-            ))}
-          </View>
-        </View>
       </ScrollView>
     </View>
   );

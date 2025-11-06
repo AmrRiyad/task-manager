@@ -101,6 +101,15 @@ export default function HomeScreen() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'todo': return '#999';
+      case 'in progress': return '#fbbf24';
+      case 'done': return '#10b981';
+      default: return '#999';
+    }
+  };
+
   const filteredTasks = statusFilter === 'all' 
     ? tasks 
     : tasks.filter(t => t.status === statusFilter);
@@ -234,6 +243,7 @@ export default function HomeScreen() {
       >
         <View style={styles.modalOverlay}>
           <ThemedView style={styles.modalContent}>
+            {/* Modal Header */}
             <View style={styles.modalHeader}>
               <ThemedText type="subtitle">
                 {editingTask ? 'Edit Task' : 'New Task'}
@@ -243,7 +253,9 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Modal Form */}
             <View style={styles.form}>
+              {/* Title Input */}
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Title</ThemedText>
                 <TextInput
@@ -255,6 +267,7 @@ export default function HomeScreen() {
                 />
               </View>
 
+              {/* Description Input */}
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Description</ThemedText>
                 <TextInput
@@ -268,6 +281,7 @@ export default function HomeScreen() {
                 />
               </View>
 
+              {/* Priority Input */}
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Priority</ThemedText>
                 <View style={styles.priorityButtons}>
@@ -295,6 +309,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
+              {/* Status Input */}
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Status</ThemedText>
                 <View style={styles.statusButtons}>
@@ -303,8 +318,9 @@ export default function HomeScreen() {
                       key={status}
                       style={[
                         styles.statusButton,
+                        { backgroundColor: backgroundColor },
                         formData.status === status && {
-                          backgroundColor: tintColor,
+                          backgroundColor: getStatusColor(status),
                         }
                       ]}
                       onPress={() => setFormData({ ...formData, status })}
@@ -312,6 +328,7 @@ export default function HomeScreen() {
                       <ThemedText
                         style={[
                           styles.statusText,
+                          { color: textColor },
                           formData.status === status && styles.statusTextActive
                         ]}
                       >
@@ -322,6 +339,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
+              {/* Modal Actions */}
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={[styles.button, styles.cancelButton]}
@@ -658,6 +676,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   statusText: {
     fontSize: 14,
@@ -692,6 +711,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: '#000',
   },
 });
