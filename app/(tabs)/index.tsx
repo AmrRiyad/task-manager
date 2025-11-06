@@ -178,30 +178,35 @@ export default function HomeScreen() {
           </View>
         ) : statusFilter === 'all' && groupedTasks ? (
           <View style={styles.section}>
-            {statusOrder.map((status) => {
-              const statusTasks = groupedTasks[status] || [];
-              if (statusTasks.length === 0) return null;
-              
-              return (
-                <View key={status} style={styles.statusGroup}>
+          {statusOrder.map((status, index) => {
+            const statusTasks = groupedTasks[status] || [];
+            if (statusTasks.length === 0) return null;
+
+            return (
+              <View key={status} style={styles.statusGroup}>
+                {/* Only show divider if NOT the first group */}
+                {index !== 0 && (
                   <View style={[styles.divider, { backgroundColor: dividerColor }]} />
-                  <ThemedText style={styles.statusGroupTitle}>
-                    {getStatusLabel(status)}
-                  </ThemedText>
-                  {statusTasks.map(task => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onToggle={toggleTask}
-                      onEdit={openModal}
-                      onDelete={deleteTask}
-                      getPriorityColor={getPriorityColor}
-                      textColor={textColor}
-                    />
-                  ))}
-                </View>
-              );
-            })}
+                )}
+
+                <ThemedText style={styles.statusGroupTitle}>
+                  {getStatusLabel(status)}
+                </ThemedText>
+
+                {statusTasks.map(task => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onEdit={openModal}
+                    onDelete={deleteTask}
+                    getPriorityColor={getPriorityColor}
+                    textColor={textColor}
+                  />
+                ))}
+              </View>
+            );
+          })}
           </View>
         ) : (
           <View style={styles.section}>
@@ -439,14 +444,13 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     marginTop: 16,
-    height: 50,
+    height: 24,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
   },
   emptyState: {
     flex: 1,
@@ -465,7 +469,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 0,
   },
   sectionTitle: {
     fontSize: 18,
@@ -473,7 +477,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statusGroup: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   statusGroupTitle: {
     fontSize: 14,

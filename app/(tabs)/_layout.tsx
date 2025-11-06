@@ -1,8 +1,8 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Tabs } from 'expo-router';
-import { ClipboardList, Folder } from 'lucide-react-native';
-import { Platform } from 'react-native';
+import { ClipboardList, SettingsIcon } from 'lucide-react-native';
+import { Platform, Settings } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -73,10 +73,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Projects',
+          title: 'Settings',
           tabBarIcon: ({ color, focused, size }) => (
             <TabIcon 
-              IconComponent={Folder} 
+              IconComponent={SettingsIcon} 
               color={color} 
               focused={focused}
               size={size || 24}
