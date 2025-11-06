@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TabsAdvanced } from '@/components/ui/tabs';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useToastController } from '@tamagui/toast';
 import { Pencil, SquarePen, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
@@ -34,6 +35,7 @@ export default function HomeScreen() {
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const dividerColor = colorScheme === 'dark' ? '#2a2a2a' : '#e5e5e5';
+  const toast = useToastController();
 
   const openModal = (task?: Task) => {
     if (task) {
@@ -58,7 +60,13 @@ export default function HomeScreen() {
   };
 
   const saveTask = () => {
-    if (!formData.title.trim()) return;
+    if (!formData.title.trim()) {
+      toast.show('Task title required', {
+        message: 'Please enter a title for your task',
+        customData: { type: 'warning' },
+      });
+      return;
+    }
 
     if (editingTask) {
       setTasks(tasks.map(t => 
@@ -66,6 +74,9 @@ export default function HomeScreen() {
           ? { ...t, ...formData, completed: formData.status === 'done' }
           : t
       ));
+      toast.show('Your task has been successfully updated', {
+        customData: { type: 'success' },
+      });
     } else {
       const newTask: Task = {
         id: Date.now().toString(),
@@ -74,6 +85,9 @@ export default function HomeScreen() {
         createdAt: new Date(),
       };
       setTasks([newTask, ...tasks]);
+      toast.show('Task created successfully', {
+        customData: { type: 'success' },
+      });
     }
     closeModal();
   };
@@ -89,7 +103,11 @@ export default function HomeScreen() {
   };
 
   const deleteTask = (id: string) => {
+    const task = tasks.find(t => t.id === id);
     setTasks(tasks.filter(t => t.id !== id));
+    toast.show('Task deleted successfully', {
+      customData: { type: 'success' },
+    });
   };
 
   const getPriorityColor = (priority: string) => {

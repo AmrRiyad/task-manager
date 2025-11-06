@@ -11,3 +11,9 @@ declare module 'tamagui' {
   interface TamaguiCustomConfig extends Conf {}
 }
 
+declare module '@tamagui/toast' {
+  interface CustomData {
+    type?: 'success' | 'warning' | 'error' | 'default';
+  }
+}
+
