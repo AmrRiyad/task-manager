@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TabsAdvanced } from '@/components/ui/tabs';
+import { Task, useTasks } from '@/contexts/task-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useToastController } from '@tamagui/toast';
@@ -9,18 +10,8 @@ import { Pencil, SquarePen, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'todo' | 'in progress' | 'done';
-  completed: boolean;
-  createdAt: Date;
-}
-
 export default function HomeScreen() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { tasks, addTask, updateTask, deleteTask, toggleTask } = useTasks();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'in progress' | 'done'>('all');
@@ -70,22 +61,18 @@ export default function HomeScreen() {
     }
 
     if (editingTask) {
-      setTasks(tasks.map(t => 
-        t.id === editingTask.id 
-          ? { ...t, ...formData, completed: formData.status === 'done' }
-          : t
-      ));
+      updateTask(editingTask.id, {
+        ...formData,
+        completed: formData.status === 'done',
+      });
       toast.show('Your task has been successfully updated', {
         customData: { type: 'success' },
       });
     } else {
-      const newTask: Task = {
-        id: Date.now().toString(),
+      addTask({
         ...formData,
         completed: formData.status === 'done',
-        createdAt: new Date(),
-      };
-      setTasks([newTask, ...tasks]);
+      });
       toast.show('Task created successfully', {
         customData: { type: 'success' },
       });
@@ -93,19 +80,8 @@ export default function HomeScreen() {
     closeModal();
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map(t => {
-      if (t.id === id) {
-        const newStatus = t.status === 'done' ? 'todo' : t.status === 'todo' ? 'in progress' : 'done';
-        return { ...t, status: newStatus, completed: newStatus === 'done' };
-      }
-      return t;
-    }));
-  };
-
-  const deleteTask = (id: string) => {
-    const task = tasks.find(t => t.id === id);
-    setTasks(tasks.filter(t => t.id !== id));
+  const handleDeleteTask = (id: string) => {
+    deleteTask(id);
     toast.show('Task deleted successfully', {
       customData: { type: 'success' },
     });
@@ -160,6 +136,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor }]}>
       {/* Header */}
       <ThemedView style={styles.header}>
+        {/* Header Title and Add Task Button*/}
         <View style={styles.headerTop}>
           <ThemedText type="title" style={styles.headerTitle}>My Tasks</ThemedText>
           <TouchableOpacity
@@ -227,7 +204,7 @@ export default function HomeScreen() {
                     task={task}
                     onToggle={toggleTask}
                     onEdit={openModal}
-                    onDelete={deleteTask}
+                    onDelete={handleDeleteTask}
                     getPriorityColor={getPriorityColor}
                     textColor={textColor}
                   />
@@ -423,7 +400,6 @@ function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColo
       pathname: '/task/[id]',
       params: {
         id: task.id,
-        task: JSON.stringify(task),
       },
     });
   };
@@ -490,6 +466,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: 'bold',
+    lineHeight: 40,
+    includeFontPadding: false,
   },
   headerButton: {
     padding: 8,

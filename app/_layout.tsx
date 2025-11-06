@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
 
 import { AppToastProvider } from '@/components/ui/toast';
+import { TaskProvider } from '@/contexts/task-context';
 import { ThemeProvider, useTheme } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import config from '@/tamagui.config';
@@ -42,7 +43,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <RootLayoutContent />
+        <TaskProvider>
+          <RootLayoutContent />
+        </TaskProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -2,7 +2,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Tabs } from 'expo-router';
 import { ClipboardList, SettingsIcon } from 'lucide-react-native';
-import { Platform, Settings } from 'react-native';
+import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -10,7 +10,7 @@ export default function TabLayout() {
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
   const inactiveTintColor = colorScheme === 'dark' ? '#666' : '#999';
-  const tabBarBg = colorScheme === 'dark' ? '#0a0a0a' : '#fafafa';
+  const tabBarBg = backgroundColor;
   const borderColor = colorScheme === 'dark' ? '#1f1f1f' : '#e5e5e5';
   const insets = useSafeAreaInsets();
 

@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { ChevronRight, Monitor, Moon, Sun } from 'lucide-react-native';
+import { Monitor, Moon, Sun } from 'lucide-react-native';
 import { useState } from 'react';
 import { Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -34,8 +34,10 @@ export default function SettingsScreen() {
       <TouchableOpacity
         style={[
           styles.themeOption,
-          isSelected && { backgroundColor: tintColor + '20', borderColor: tintColor },
-          { borderColor: borderColor }
+          { 
+            borderColor: isSelected ? tintColor : borderColor,
+            backgroundColor: backgroundColor,
+          }
         ]}
         onPress={() => handleThemeChange(mode)}
         activeOpacity={0.7}
@@ -44,11 +46,6 @@ export default function SettingsScreen() {
         <ThemedText style={[styles.themeOptionLabel, isSelected && { color: tintColor }]}>
           {label}
         </ThemedText>
-        {isSelected && (
-          <View style={[styles.checkmark, { backgroundColor: tintColor }]}>
-            <ThemedText style={styles.checkmarkText}>✓</ThemedText>
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -58,7 +55,7 @@ export default function SettingsScreen() {
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
       
       {/* Header */}
-      <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
+      <ThemedView style={styles.header}>
         <ThemedText style={styles.headerTitle}>Settings</ThemedText>
       </ThemedView>
 
@@ -71,10 +68,13 @@ export default function SettingsScreen() {
         {/* Theme Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: tintColor + '20' }]}>
+            <View style={[
+              styles.iconContainer, 
+              { backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : tintColor + '20' }
+            ]}>
               <Monitor size={18} color={tintColor} />
             </View>
-            <ThemedText style={styles.sectionTitle}>Appearance</ThemedText>
+            <ThemedText style={styles.sectionTitle}>Theme</ThemedText>
           </View>
           
           <View style={styles.themeOptions}>
@@ -95,12 +95,11 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: 'bold',
+    lineHeight: 40,
   },
   scrollView: {
     flex: 1,
@@ -130,15 +129,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   themeOptions: {
+    flexDirection: 'row',
     gap: 12,
   },
   themeOption: {
-    flexDirection: 'row',
+    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'center',
+    padding: 10,
     borderRadius: 12,
     borderWidth: 2,
-    gap: 12,
+    gap: 8,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -152,7 +154,6 @@ const styles = StyleSheet.create({
     }),
   },
   themeOptionLabel: {
-    flex: 1,
     fontSize: 16,
     fontWeight: '500',
   },
@@ -181,17 +182,5 @@ const styles = StyleSheet.create({
   languageOptionText: {
     fontSize: 15,
     fontWeight: '400',
-  },
-  checkmark: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmarkText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
   },
 });
