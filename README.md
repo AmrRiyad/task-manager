@@ -33,17 +33,14 @@ A modern React Native and Expo task manager with an intuitive interface, task pr
    ```
 
 4. **Run on your preferred platform**
+   - Scan the QR code with Expo Go app on your physical device
    - Press `i` for iOS simulator
    - Press `a` for Android emulator
-   - Scan the QR code with Expo Go app on your physical device
 
 ### Available Scripts
 
 ```bash
 npm start          # Start Expo development server
-npm run android    # Run on Android emulator
-npm run ios        # Run on iOS simulator
-npm run web        # Run in web browser
 npm run lint       # Run ESLint
 ```
 
