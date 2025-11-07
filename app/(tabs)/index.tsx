@@ -136,10 +136,7 @@ export default function HomeScreen() {
   );
 
   // Status order for display
-  const statusOrder: TaskStatus[] = useMemo(
-    () => ['todo', 'in progress', 'done'],
-    []
-  );
+  const statusOrder: TaskStatus[] = ['todo', 'in progress', 'done'];
 
   return (
     <View style={[styles.container, { backgroundColor }]}>

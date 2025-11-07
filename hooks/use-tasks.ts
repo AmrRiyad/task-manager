@@ -46,33 +46,6 @@ export function useTasks() {
   }, []);
 
   /**
-   * Toggle task status through the cycle: todo -> in progress -> done -> todo
-   */
-  const toggleTask = useCallback((id: string) => {
-    setTasks((prev) =>
-      prev.map((task) => {
-        if (task.id === id) {
-          let newStatus: Task['status'];
-          if (task.status === 'todo') {
-            newStatus = 'in progress';
-          } else if (task.status === 'in progress') {
-            newStatus = 'done';
-          } else {
-            newStatus = 'todo';
-          }
-          
-          return {
-            ...task,
-            status: newStatus,
-            completed: newStatus === 'done',
-          };
-        }
-        return task;
-      })
-    );
-  }, []);
-
-  /**
    * Get filtered tasks based on status filter
    */
   const getFilteredTasks = useCallback((filter: StatusFilter): Task[] => {
@@ -100,7 +73,6 @@ export function useTasks() {
     addTask,
     updateTask,
     deleteTask,
-    toggleTask,
     getFilteredTasks,
     getGroupedTasks,
   };

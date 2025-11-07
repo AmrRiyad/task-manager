@@ -29,19 +29,6 @@ export function validateTaskTitle(title: string): { isValid: boolean; error?: st
 }
 
 /**
- * Validate task description
- * @param description - Task description to validate
- * @returns Object with isValid flag and optional error message
- */
-export function validateTaskDescription(description: string): { isValid: boolean; error?: string } {
-  if (description.trim().length > 2000) {
-    return { isValid: false, error: 'Task description must be less than 2000 characters' };
-  }
-  
-  return { isValid: true };
-}
-
-/**
  * Validate entire task form data
  * @param title - Task title
  * @param description - Task description
@@ -56,11 +43,5 @@ export function validateTaskForm(
     return titleValidation;
   }
   
-  const descriptionValidation = validateTaskDescription(description);
-  if (!descriptionValidation.isValid) {
-    return descriptionValidation;
-  }
-  
   return { isValid: true };
 }
-

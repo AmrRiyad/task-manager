@@ -145,13 +145,3 @@ export function getPlaceholderColor(colorScheme: 'light' | 'dark'): string {
 export function getInputBackgroundColor(colorScheme: 'light' | 'dark'): string {
   return colorScheme === 'dark' ? '#1a1a1a' : '#f8f8f8';
 }
-
-/**
- * Get dynamic secondary text color based on theme
- * @param colorScheme - Current color scheme
- * @returns Secondary text color string
- */
-export function getSecondaryTextColor(colorScheme: 'light' | 'dark'): string {
-  return colorScheme === 'dark' ? '#a0a0a0' : '#666666';
-}
-
