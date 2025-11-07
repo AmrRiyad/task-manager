@@ -4,50 +4,24 @@ import { useTheme } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Monitor, Moon, Sun } from 'lucide-react-native';
-import { useState } from 'react';
 import { Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-type Language = 'English' | 'Spanish' | 'French' | 'German' | 'Italian' | 'Portuguese' | 'Arabic' | 'Chinese' | 'Japanese';
-
+/**
+ * Settings screen for app configuration
+ */
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
-  const { themeMode, setThemeMode, isSystemMode } = useTheme();
+  const { themeMode, setThemeMode } = useTheme();
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
   const borderColor = colorScheme === 'dark' ? '#2a2a2a' : '#e5e5e5';
-  
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>('English');
 
+  /**
+   * Handle theme mode change
+   */
   const handleThemeChange = async (mode: 'light' | 'dark' | 'system') => {
     await setThemeMode(mode);
-  };
-
-  const handleLanguageChange = (language: Language) => {
-    setSelectedLanguage(language);
-    // TODO: Implement language persistence and i18n
-  };
-
-  const ThemeOption = ({ mode, label, icon: Icon }: { mode: 'light' | 'dark' | 'system'; label: string; icon: any }) => {
-    const isSelected = themeMode === mode;
-    return (
-      <TouchableOpacity
-        style={[
-          styles.themeOption,
-          { 
-            borderColor: isSelected ? tintColor : borderColor,
-            backgroundColor: backgroundColor,
-          }
-        ]}
-        onPress={() => handleThemeChange(mode)}
-        activeOpacity={0.7}
-      >
-        <Icon size={24} color={isSelected ? tintColor : textColor} />
-        <ThemedText style={[styles.themeOptionLabel, isSelected && { color: tintColor }]}>
-          {label}
-        </ThemedText>
-      </TouchableOpacity>
-    );
   };
 
   return (
@@ -78,15 +52,94 @@ export default function SettingsScreen() {
           </View>
           
           <View style={styles.themeOptions}>
-            <ThemeOption mode="light" label="Light" icon={Sun} />
-            <ThemeOption mode="dark" label="Dark" icon={Moon} />
-            <ThemeOption mode="system" label="System" icon={Monitor} />
+            <ThemeOption 
+              mode="light" 
+              label="Light" 
+              icon={Sun} 
+              isSelected={themeMode === 'light'}
+              onPress={() => handleThemeChange('light')}
+              tintColor={tintColor}
+              textColor={textColor}
+              borderColor={borderColor}
+              backgroundColor={backgroundColor}
+            />
+            <ThemeOption 
+              mode="dark" 
+              label="Dark" 
+              icon={Moon} 
+              isSelected={themeMode === 'dark'}
+              onPress={() => handleThemeChange('dark')}
+              tintColor={tintColor}
+              textColor={textColor}
+              borderColor={borderColor}
+              backgroundColor={backgroundColor}
+            />
+            <ThemeOption 
+              mode="system" 
+              label="System" 
+              icon={Monitor} 
+              isSelected={themeMode === 'system'}
+              onPress={() => handleThemeChange('system')}
+              tintColor={tintColor}
+              textColor={textColor}
+              borderColor={borderColor}
+              backgroundColor={backgroundColor}
+            />
           </View>
         </View>
       </ScrollView>
     </View>
   );
 }
+
+/**
+ * Theme option button component
+ */
+interface ThemeOptionProps {
+  mode: 'light' | 'dark' | 'system';
+  label: string;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  isSelected: boolean;
+  onPress: () => void;
+  tintColor: string;
+  textColor: string;
+  borderColor: string;
+  backgroundColor: string;
+}
+
+function ThemeOption({ 
+  label, 
+  icon: Icon, 
+  isSelected, 
+  onPress, 
+  tintColor, 
+  textColor, 
+  borderColor,
+  backgroundColor 
+}: ThemeOptionProps) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.themeOption,
+        { 
+          borderColor: isSelected ? tintColor : borderColor,
+          backgroundColor: backgroundColor,
+        }
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Icon size={24} color={isSelected ? tintColor : textColor} />
+      <ThemedText style={[styles.themeOptionLabel, isSelected && { color: tintColor }]}>
+        {label}
+      </ThemedText>
+    </TouchableOpacity>
+  );
+}
+
+/**
+ * Styles
+ */
 
 const styles = StyleSheet.create({
   container: {
@@ -156,31 +209,5 @@ const styles = StyleSheet.create({
   themeOptionLabel: {
     fontSize: 16,
     fontWeight: '500',
-  },
-  languageOptions: {
-    gap: 10,
-  },
-  languageOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  languageOptionText: {
-    fontSize: 15,
-    fontWeight: '400',
   },
 });

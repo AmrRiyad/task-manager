@@ -5,20 +5,21 @@ import { ClipboardList, SettingsIcon } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+/**
+ * Tab layout component for bottom navigation
+ */
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
   const inactiveTintColor = colorScheme === 'dark' ? '#666' : '#999';
-  const tabBarBg = backgroundColor;
   const borderColor = colorScheme === 'dark' ? '#1f1f1f' : '#e5e5e5';
   const insets = useSafeAreaInsets();
 
-  // Calculate responsive padding based on safe area insets
+  // Calculate tab bar height with safe area insets
   const baseHeight = Platform.OS === 'ios' ? 88 : 64;
   const defaultBottomPadding = Platform.OS === 'ios' ? 24 : 0;
   const bottomPadding = Math.max(insets.bottom, defaultBottomPadding);
-  // Adjust height to account for safe area insets
   const extraPadding = bottomPadding - defaultBottomPadding;
 
   return (
@@ -28,7 +29,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: tintColor,
         tabBarInactiveTintColor: inactiveTintColor,
         tabBarStyle: {
-          backgroundColor: tabBarBg,
+          backgroundColor: backgroundColor,
           borderTopColor: borderColor,
           borderTopWidth: 1,
           height: baseHeight + extraPadding,
@@ -71,7 +72,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="settings"
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, focused, size }) => (
@@ -88,6 +89,9 @@ export default function TabLayout() {
   );
 }
 
+/**
+ * Tab icon component with focus animation
+ */
 interface TabIconProps {
   IconComponent: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
   color: string;

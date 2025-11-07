@@ -1,142 +1,261 @@
 import React from 'react';
-import type { TabLayout, TabsTabProps } from 'tamagui';
 import {
-  SizableText,
-  Tabs,
-  YStack
-} from 'tamagui';
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  LayoutChangeEvent,
+  useColorScheme,
+} from 'react-native';
 
-export interface TabsAdvancedProps {
+export interface Tab {
   value: string;
-  onValueChange: (value: string) => void;
-  tabs: Array<{ value: string; label: string }>;
-  variant?: 'background' | 'underline';
+  label: string;
 }
 
-export const TabsAdvanced = ({ value, onValueChange, tabs, variant = 'background' }: TabsAdvancedProps) => {
-  const [tabState, setTabState] = React.useState<{
-    currentTab: string;
-    intentAt: TabLayout | null;
-    activeAt: TabLayout | null;
-    prevActiveAt: TabLayout | null;
-  }>({
-    activeAt: null,
-    currentTab: value,
-    intentAt: null,
-    prevActiveAt: null,
-  });
+export interface CustomTabsProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  tabs: Tab[];
+  variant?: 'background' | 'underline';
+  activeColor?: string;
+  inactiveColor?: string;
+  backgroundColor?: string;
+  underlineColor?: string;
+}
 
+interface TabLayout {
+  x: number;
+  width: number;
+}
+
+/**
+ * Custom tabs component built from scratch for React Native/Expo
+ * Supports background and underline variants with smooth animations
+ */
+export const CustomTabs: React.FC<CustomTabsProps> = ({
+  value,
+  onValueChange,
+  tabs,
+  variant = 'background',
+  activeColor,
+  inactiveColor,
+  backgroundColor,
+  underlineColor,
+}) => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  // Better default colors that are always visible
+  const defaultActiveColor = activeColor || (isDark ? '#ffffff' : '#000000');
+  const defaultInactiveColor = inactiveColor || (isDark ? '#a0a0a0' : '#8e8e93');
+  const defaultBackgroundColor = backgroundColor || (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)');
+  const defaultUnderlineColor = underlineColor || (isDark ? '#ffffff' : '#007AFF');
+
+  // Animation values
+  const indicatorPosition = React.useRef(new Animated.Value(0)).current;
+  const indicatorWidth = React.useRef(new Animated.Value(0)).current;
+
+  // Store tab layouts
+  const [tabLayouts, setTabLayouts] = React.useState<Map<string, TabLayout>>(new Map());
+
+  /**
+   * Handle tab layout measurements
+   */
+  const handleTabLayout = (tabValue: string, event: LayoutChangeEvent) => {
+    const { x, width } = event.nativeEvent.layout;
+    setTabLayouts((prev) => {
+      const next = new Map(prev);
+      next.set(tabValue, { x, width });
+      return next;
+    });
+  };
+
+  /**
+   * Animate indicator when active tab changes
+   */
   React.useEffect(() => {
-    setTabState((prev) => ({ ...prev, currentTab: value }));
-  }, [value]);
-
-  const setCurrentTab = (currentTab: string) => {
-    setTabState((prev) => ({ ...prev, currentTab }));
-    onValueChange(currentTab);
-  };
-
-  const setIntentIndicator = (intentAt: TabLayout | null) =>
-    setTabState((prev) => ({ ...prev, intentAt }));
-
-  const setActiveIndicator = (activeAt: TabLayout | null) =>
-    setTabState((prev) => ({ ...prev, prevActiveAt: prev.activeAt, activeAt }));
-
-  const { activeAt, intentAt, prevActiveAt, currentTab } = tabState;
-
-  const direction = (() => {
-    if (!activeAt || !prevActiveAt || activeAt.x === prevActiveAt.x) {
-      return 0;
+    const layout = tabLayouts.get(value);
+    if (layout) {
+      Animated.parallel([
+        Animated.spring(indicatorPosition, {
+          toValue: layout.x,
+          useNativeDriver: false,
+          tension: 300,
+          friction: 30,
+        }),
+        Animated.spring(indicatorWidth, {
+          toValue: layout.width,
+          useNativeDriver: false,
+          tension: 300,
+          friction: 30,
+        }),
+      ]).start();
     }
-    return activeAt.x > prevActiveAt.x ? -1 : 1;
-  })();
+  }, [value, tabLayouts, indicatorPosition, indicatorWidth]);
 
-  const handleOnInteraction: TabsTabProps['onInteraction'] = (type, layout) => {
-    if (type === 'select') {
-      setActiveIndicator(layout);
-    } else {
-      setIntentIndicator(layout);
+  /**
+   * Handle tab press
+   */
+  const handleTabPress = (tabValue: string) => {
+    if (tabValue !== value) {
+      onValueChange(tabValue);
     }
   };
 
+  /**
+   * Render underline variant
+   */
   if (variant === 'underline') {
     return (
-      <Tabs
-        value={currentTab}
-        onValueChange={setCurrentTab}
-        orientation="horizontal"
-        size="$4"
-        height={50}
-        flexDirection="column"
-        activationMode="manual"
-        backgroundColor="transparent"
-        borderRadius={0}
-      >
-        <YStack>
-          <Tabs.List
-            disablePassBorderRadius
-            loop={false}
-            borderBottomLeftRadius={0}
-            borderBottomRightRadius={0}
-            paddingBottom="$1.5"
-            borderColor="$color3"
-            borderBottomWidth="$0.5"
-            backgroundColor="transparent"
-          >
-            {tabs.map((tab) => (
-              <Tabs.Tab
+      <View style={styles.underlineWrapper}>
+        <View style={styles.underlineTabsContainer}>
+          {tabs.map((tab) => {
+            const isActive = tab.value === value;
+            return (
+              <TouchableOpacity
                 key={tab.value}
-                unstyled
-                paddingHorizontal="$3"
-                paddingVertical="$2"
-                value={tab.value}
-                onInteraction={handleOnInteraction}
-                borderRadius="$5"
+                onPress={() => handleTabPress(tab.value)}
+                onLayout={(event) => handleTabLayout(tab.value, event)}
+                style={styles.underlineTab}
+                activeOpacity={0.7}
               >
-                <SizableText>{tab.label}</SizableText>
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </YStack>
-      </Tabs>
+                <Text
+                  style={[
+                    styles.tabText,
+                    {
+                      color: isActive ? defaultActiveColor : defaultInactiveColor,
+                      fontWeight: isActive ? '600' : '400',
+                    },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        
+        {/* Underline indicator */}
+        <View style={[styles.underlineContainer, { borderBottomColor: isDark ? '#333' : '#e5e5e5' }]}>
+          <Animated.View
+            style={[
+              styles.underlineIndicator,
+              {
+                backgroundColor: defaultUnderlineColor,
+                transform: [{ translateX: indicatorPosition }],
+                width: indicatorWidth,
+              },
+            ]}
+          />
+        </View>
+      </View>
     );
   }
 
+  /**
+   * Render background variant (default)
+   */
   return (
-    <Tabs
-      value={currentTab}
-      onValueChange={setCurrentTab}
-      orientation="horizontal"
-      size="$4"
-      padding="$2"
-      height={50}
-      flexDirection="column"
-      activationMode="manual"
-      backgroundColor="transparent"
-      borderRadius={0}
-      position="relative"
-    >
-      <YStack>
-        <Tabs.List
-          disablePassBorderRadius
-          loop={false}
-          gap="$2"
-          backgroundColor="transparent"
-        >
-          {tabs.map((tab) => (
-            <Tabs.Tab
+    <View style={[styles.container, styles.backgroundContainer]}>
+      <View style={styles.backgroundTabsContainer}>
+        {/* Background indicator */}
+        <Animated.View
+          style={[
+            styles.backgroundIndicator,
+            {
+              backgroundColor: defaultBackgroundColor,
+              transform: [{ translateX: indicatorPosition }],
+              width: indicatorWidth,
+            },
+          ]}
+        />
+
+        {tabs.map((tab) => {
+          const isActive = tab.value === value;
+          return (
+            <TouchableOpacity
               key={tab.value}
-              unstyled
-              paddingVertical="$2"
-              paddingHorizontal="$3"
-              value={tab.value}
-              onInteraction={handleOnInteraction}
-              borderRadius="$5"
+              onPress={() => handleTabPress(tab.value)}
+              onLayout={(event) => handleTabLayout(tab.value, event)}
+              style={styles.backgroundTab}
+              activeOpacity={0.7}
             >
-              <SizableText>{tab.label}</SizableText>
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-      </YStack>
-    </Tabs>
+              <Text
+                style={[
+                  styles.tabText,
+                  {
+                    color: isActive ? defaultActiveColor : defaultInactiveColor,
+                    fontWeight: isActive ? '600' : '400',
+                  },
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  backgroundContainer: {
+    height: 44,
+  },
+  backgroundTabsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    height: '100%',
+  },
+  backgroundTab: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    zIndex: 2,
+  },
+  backgroundIndicator: {
+    position: 'absolute',
+    height: '100%',
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  underlineWrapper: {
+    width: '100%',
+    minHeight: 50,
+  },
+  underlineTabsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+  },
+  underlineTab: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    height: '100%',
+  },
+  underlineContainer: {
+    height: 1,
+    position: 'relative',
+    width: '100%',
+  },
+  underlineIndicator: {
+    position: 'absolute',
+    height: 3,
+    bottom: 0,
+    borderRadius: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});

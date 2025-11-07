@@ -8,7 +8,6 @@ import { TamaguiProvider } from 'tamagui';
 
 import { AppToastProvider } from '@/components/ui/toast';
 import { Colors } from '@/constants/theme';
-import { TaskProvider } from '@/contexts/task-context';
 import { ThemeProvider, useTheme } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import config from '@/tamagui.config';
@@ -17,6 +16,9 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+/**
+ * Root layout content component with theme integration
+ */
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const { effectiveTheme } = useTheme();
@@ -24,6 +26,7 @@ function RootLayoutContent() {
   // Get background color from theme
   const backgroundColor = Colors[colorScheme].background;
 
+  // Custom navigation themes with our color scheme
   const customDarkTheme = {
     ...DarkTheme,
     colors: {
@@ -46,7 +49,6 @@ function RootLayoutContent() {
     <TamaguiProvider 
       config={config} 
       defaultTheme={effectiveTheme === 'dark' ? 'dark' : 'light'}
-      key={effectiveTheme}
     >
       <NavigationThemeProvider value={colorScheme === 'dark' ? customDarkTheme : customLightTheme}>
         <View style={{ flex: 1, backgroundColor }}>
@@ -57,14 +59,22 @@ function RootLayoutContent() {
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              <Stack.Screen 
+                name="task/new" 
+                options={{ 
+                  headerShown: false, 
+                  presentation: 'card',
+                  contentStyle: { backgroundColor },
+                  animation: 'slide_from_right',
+                }} 
+              />
               <Stack.Screen 
                 name="task/[id]" 
                 options={{ 
                   headerShown: false, 
                   presentation: 'card',
                   contentStyle: { backgroundColor },
-                  animation: 'fade',
+                  animation: 'slide_from_right',
                 }} 
               />
             </Stack>
@@ -76,13 +86,15 @@ function RootLayoutContent() {
   );
 }
 
+/**
+ * Root layout component with providers
+ * Note: Task state is managed locally in components, not globally
+ */
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <TaskProvider>
           <RootLayoutContent />
-        </TaskProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -8,6 +8,9 @@ export type ThemedTextProps = TextProps & {
   type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
 };
 
+/**
+ * Theme-aware text component that automatically adjusts color based on current theme
+ */
 export function ThemedText({
   style,
   lightColor,

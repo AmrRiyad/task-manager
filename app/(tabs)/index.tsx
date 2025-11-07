@@ -1,143 +1,151 @@
+import { EmptyState } from '@/components/tasks/empty-state';
+import { GroupedTaskList } from '@/components/tasks/grouped-task-list';
+import { TaskList } from '@/components/tasks/task-list';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TabsAdvanced } from '@/components/ui/tabs';
-import { Task, useTasks } from '@/contexts/task-context';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { CustomTabs } from '@/components/ui/tabs';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTasks } from '@/hooks/use-tasks';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { ToastViewport, useToastController } from '@tamagui/toast';
+import type { StatusFilter, Task, TaskStatus } from '@/types/task';
+import { setTaskCallbacks } from '@/utils/task-callbacks';
+import { useToastController } from '@tamagui/toast';
 import { useRouter } from 'expo-router';
-import { SquarePen, Trash2 } from 'lucide-react-native';
-import { useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SquarePen } from 'lucide-react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Home screen displaying the task list with filtering and CRUD operations
+ * Uses local component state for managing tasks
+ */
 export default function HomeScreen() {
-  const { tasks, addTask, updateTask, deleteTask, toggleTask } = useTasks();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'in progress' | 'done'>('all');
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    priority: 'medium' as 'low' | 'medium' | 'high',
-    status: 'todo' as 'todo' | 'in progress' | 'done',
-  });
-
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
-  const textColor = useThemeColor({}, 'text');
   const dividerColor = colorScheme === 'dark' ? '#2a2a2a' : '#e5e5e5';
   const toast = useToastController();
+  const mutedTextColor = colorScheme === 'dark' ? '#a0a0a0' : '#8e8e93';
+  // Task management hook
+  const { 
+    tasks, 
+    addTask, 
+    updateTask, 
+    deleteTask,
+    getFilteredTasks,
+    getGroupedTasks,
+  } = useTasks();
 
-  const openModal = (task?: Task) => {
-    if (task) {
-      setEditingTask(task);
-      setFormData({
+  // UI state
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  
+  // Delete confirmation dialog state
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+
+  /**
+   * Navigate to new task creation screen
+   */
+  const handleCreateTask = useCallback(() => {
+    setTaskCallbacks({
+      onCreate: (taskData: Omit<Task, 'id' | 'createdAt'>) => {
+        addTask(taskData);
+        toast.show('Task created successfully', {
+          customData: { type: 'success' },
+        });
+      },
+    });
+
+    router.push('/task/new');
+  }, [router, addTask, toast]);
+
+  /**
+   * Show delete confirmation dialog
+   */
+  const handleDeleteTask = useCallback((id: string) => {
+    setTaskToDelete(id);
+    setDeleteDialogVisible(true);
+  }, []);
+
+  /**
+   * Delete task after confirmation
+   */
+  const handleDeleteConfirm = useCallback(() => {
+    if (taskToDelete) {
+      deleteTask(taskToDelete);
+      toast.show('Task deleted successfully', {
+        customData: { type: 'success' },
+      });
+    }
+    setDeleteDialogVisible(false);
+    setTaskToDelete(null);
+  }, [taskToDelete, deleteTask, toast]);
+
+  /**
+   * Cancel delete operation
+   */
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteDialogVisible(false);
+    setTaskToDelete(null);
+  }, []);
+
+  /**
+   * Navigate to task details screen with callback functions
+   */
+  const handleViewTask = useCallback((task: Task) => {
+    setTaskCallbacks({
+      onUpdate: (id: string, updates: Partial<Task>) => {
+        updateTask(id, updates);
+        toast.show('Task updated successfully', {
+          customData: { type: 'success' },
+        });
+      },
+      onDelete: (id: string) => {
+        deleteTask(id);
+        toast.show('Task deleted successfully', {
+          customData: { type: 'success' },
+        });
+      },
+    });
+
+    router.push({
+      pathname: '/task/[id]',
+      params: {
+        id: task.id,
         title: task.title,
         description: task.description,
         priority: task.priority,
         status: task.status,
-      });
-    } else {
-      setEditingTask(null);
-      setFormData({ title: '', description: '', priority: 'medium', status: 'todo' });
-    }
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setEditingTask(null);
-    setFormData({ title: '', description: '', priority: 'medium', status: 'todo' });
-  };
-
-  const saveTask = () => {
-    if (!formData.title.trim()) {
-      toast.show('Task title required', {
-        message: 'Please enter a title for your task',
-        customData: { type: 'warning' },
-      });
-      return;
-    }
-
-    if (editingTask) {
-      updateTask(editingTask.id, {
-        ...formData,
-        completed: formData.status === 'done',
-      });
-      toast.show('Your task has been successfully updated', {
-        customData: { type: 'success' },
-      });
-    } else {
-      addTask({
-        ...formData,
-        completed: formData.status === 'done',
-      });
-      toast.show('Task created successfully', {
-        customData: { type: 'success' },
-      });
-    }
-    closeModal();
-  };
-
-  const handleDeleteTask = (id: string) => {
-    deleteTask(id);
-    toast.show('Task deleted successfully', {
-      customData: { type: 'success' },
+        createdAt: task.createdAt.toISOString(),
+      },
     });
-  };
+  }, [router, updateTask, deleteTask, toast]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return '#ff6b6b';
-      case 'medium': return '#ffa726';
-      case 'low': return '#66bb6a';
-      default: return '#999';
-    }
-  };
+  // Get filtered tasks based on current filter
+  const filteredTasks = useMemo(
+    () => getFilteredTasks(statusFilter),
+    [getFilteredTasks, statusFilter]
+  );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'todo': return '#999';
-      case 'in progress': return '#fbbf24';
-      case 'done': return '#10b981';
-      default: return '#999';
-    }
-  };
+  // Get grouped tasks for 'all' view
+  const groupedTasks = useMemo(
+    () => statusFilter === 'all' ? getGroupedTasks : null,
+    [statusFilter, getGroupedTasks]
+  );
 
-  const filteredTasks = statusFilter === 'all' 
-    ? tasks 
-    : tasks.filter(t => t.status === statusFilter);
-
-  // Group tasks by status when showing all tasks
-  const groupedTasks = statusFilter === 'all' 
-    ? tasks.reduce((acc, task) => {
-        if (!acc[task.status]) {
-          acc[task.status] = [];
-        }
-        acc[task.status].push(task);
-        return acc;
-      }, {} as Record<string, Task[]>)
-    : null;
-
-  // Define status order for display
-  const statusOrder: Array<'todo' | 'in progress' | 'done'> = ['todo', 'in progress', 'done'];
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'todo': return 'Todo';
-      case 'in progress': return 'In Progress';
-      case 'done': return 'Done';
-      default: return status;
-    }
-  };
+  // Status order for display
+  const statusOrder: TaskStatus[] = useMemo(
+    () => ['todo', 'in progress', 'done'],
+    []
+  );
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
       {/* Header */}
       <ThemedView style={styles.header}>
-        {/* Header Title and Add Task Button*/}
+        {/* Title and Add Button */}
         <View style={styles.headerTop}>
           <ThemedText type="title" style={styles.headerTitle}>My Tasks</ThemedText>
           <TouchableOpacity
@@ -148,334 +156,70 @@ export default function HomeScreen() {
                 borderRadius: 12,
               }
             ]}
-            onPress={() => openModal()}
+            onPress={handleCreateTask}
             activeOpacity={0.7}
           >
             <SquarePen size={24} color={tintColor} />
           </TouchableOpacity>
         </View>
         
-        {/* Status Filter */}
+        {/* Status Filter Tabs */}
         <View style={styles.filterContainer}>
-          <TabsAdvanced
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}
-            tabs={[
-              { value: 'all', label: 'All Tasks' },
-              { value: 'todo', label: 'Todo' },
-              { value: 'in progress', label: 'In Progress' },
-              { value: 'done', label: 'Done' },
-            ]}
-            variant="underline"
-          />
+
+        <CustomTabs
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+          tabs={[
+            { value: 'all', label: 'All Tasks' },
+            { value: 'todo', label: 'Todo' },
+            { value: 'in progress', label: 'In Progress' },
+            { value: 'done', label: 'Done' },
+          ]}
+          variant="underline"
+          activeColor={tintColor}
+          inactiveColor={mutedTextColor}
+          underlineColor={tintColor}
+        />
         </View>
       </ThemedView>
 
       {/* Task List */}
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={filteredTasks.length === 0 ? styles.scrollContentEmpty : styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {filteredTasks.length === 0 ? (
-          <View style={styles.emptyState}>
-            <ThemedText style={styles.emptyText}>
-              {tasks.length === 0 ? 'No tasks yet!' : `No ${statusFilter === 'all' ? '' : statusFilter} tasks`}
-            </ThemedText>
-            <ThemedText style={styles.emptySubtext}>
-              {tasks.length === 0 
-                ? 'Tap the button to create your first task'
-                : 'Try selecting a different filter'}
-            </ThemedText>
-          </View>
+          <EmptyState statusFilter={statusFilter} hasAnyTasks={tasks.length > 0} />
         ) : statusFilter === 'all' && groupedTasks ? (
-          <View style={styles.section}>
-          {statusOrder.map((status, index) => {
-            const statusTasks = groupedTasks[status] || [];
-            if (statusTasks.length === 0) return null;
-
-            return (
-              <View key={status} style={styles.statusGroup}>
-                {/* Only show divider if NOT the first group */}
-                {index !== 0 && (
-                  <View style={[styles.divider, { backgroundColor: dividerColor }]} />
-                )}
-
-                <ThemedText style={styles.statusGroupTitle}>
-                  {getStatusLabel(status)}
-                </ThemedText>
-
-                {statusTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggle={toggleTask}
-                    onDelete={handleDeleteTask}
-                    getPriorityColor={getPriorityColor}
-                    textColor={textColor}
-                  />
-                ))}
-              </View>
-            );
-          })}
-          </View>
+            <GroupedTaskList
+              groupedTasks={groupedTasks}
+              statusOrder={statusOrder}
+              dividerColor={dividerColor}
+              onDelete={handleDeleteTask}
+              onView={handleViewTask}
+            />
         ) : (
-          <View style={styles.section}>
-            {filteredTasks.map(task => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                    onToggle={toggleTask}
-                    onDelete={deleteTask}
-                getPriorityColor={getPriorityColor}
-                textColor={textColor}
-              />
-            ))}
-          </View>
+            <TaskList
+              tasks={filteredTasks}
+              onDelete={handleDeleteTask}
+              onView={handleViewTask}
+            />
         )}
       </ScrollView>
 
-      {/* Add/Edit Task Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalOverlay}>
-          {/* Toast Viewport inside Modal to ensure it appears above */}
-          <ModalToastViewport />
-          <ThemedView style={styles.modalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <ThemedText type="subtitle">
-                {editingTask ? 'Edit Task' : 'New Task'}
-              </ThemedText>
-              <TouchableOpacity onPress={closeModal}>
-                <ThemedText style={styles.closeButton}>✕</ThemedText>
-              </TouchableOpacity>
-            </View>
-
-            {/* Modal Form */}
-            <View style={styles.form}>
-              {/* Title Input */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Title</ThemedText>
-                <TextInput
-                  style={[styles.input, { color: textColor, borderColor: '#ddd' }]}
-                  placeholder="Enter task title"
-                  placeholderTextColor="#999"
-                  value={formData.title}
-                  onChangeText={(text) => setFormData({ ...formData, title: text })}
-                />
-              </View>
-
-              {/* Description Input */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Description</ThemedText>
-                <TextInput
-                  style={[styles.input, styles.textArea, { color: textColor, borderColor: '#ddd' }]}
-                  placeholder="Enter task description"
-                  placeholderTextColor="#999"
-                  multiline
-                  numberOfLines={4}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData({ ...formData, description: text })}
-                />
-              </View>
-
-              {/* Priority Input */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Priority</ThemedText>
-                <View style={styles.priorityButtons}>
-                  {(['low', 'medium', 'high'] as const).map((priority) => {
-                    const priorityColor = getPriorityColor(priority);
-                    const isSelected = formData.priority === priority;
-                    return (
-                      <TouchableOpacity
-                        key={priority}
-                        style={[
-                          styles.priorityButton,
-                          {
-                            borderColor: isSelected ? priorityColor : '#ddd',
-                            borderWidth: isSelected ? 3 : 1,
-                            backgroundColor: backgroundColor,
-                          }
-                        ]}
-                        onPress={() => setFormData({ ...formData, priority })}
-                      >
-                        <ThemedText
-                          style={[
-                            styles.priorityText,
-                            { 
-                              color: isSelected ? priorityColor : textColor,
-                              fontWeight: isSelected ? '800' : '500',
-                            }
-                          ]}
-                        >
-                          {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                        </ThemedText>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Status Input */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Status</ThemedText>
-                <View style={styles.statusButtons}>
-                  {(['todo', 'in progress', 'done'] as const).map((status) => {
-                    const statusColor = getStatusColor(status);
-                    const isSelected = formData.status === status;
-                    return (
-                      <TouchableOpacity
-                        key={status}
-                        style={[
-                          styles.statusButton,
-                          {
-                            borderColor: isSelected ? statusColor : '#ddd',
-                            borderWidth: isSelected ? 3 : 1,
-                            backgroundColor: backgroundColor,
-                          }
-                        ]}
-                        onPress={() => setFormData({ ...formData, status })}
-                      >
-                        <ThemedText
-                          style={[
-                            styles.statusText,
-                            { 
-                              color: isSelected ? statusColor : textColor,
-                              fontWeight: isSelected ? '800' : '500',
-                            }
-                          ]}
-                        >
-                          {status === 'in progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1)}
-                        </ThemedText>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Modal Actions */}
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={[styles.button, styles.cancelButton]}
-                  onPress={closeModal}
-                >
-                  <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.saveButton, { backgroundColor: tintColor }]}
-                  onPress={saveTask}
-                >
-                  <ThemedText style={styles.saveButtonText}>
-                    {editingTask ? 'Update' : 'Create'}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ThemedView>
-        </View>
-      </Modal>
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        visible={deleteDialogVisible}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        variant="danger"
+      />
     </View>
-  );
-}
-
-function ModalToastViewport() {
-  const { bottom } = useSafeAreaInsets();
-  return (
-    <ToastViewport
-      bottom={bottom + 20}
-      left={0}
-      right={0}
-      alignItems="center"
-      zIndex={10001}
-      pointerEvents="box-none"
-      position="absolute"
-    />
-  );
-}
-
-interface TaskCardProps {
-  task: Task;
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  getPriorityColor: (priority: string) => string;
-  textColor: string;
-}
-
-function TaskCard({ task, onToggle, onDelete, getPriorityColor, textColor }: TaskCardProps) {
-  const router = useRouter();
-  const isDone = task.status === 'done';
-  const backgroundColor = useThemeColor({}, 'background');
-  
-  const getStatusCircle = () => {
-    switch (task.status) {
-      case 'todo':
-        return (
-          <View style={styles.statusCircleTodo} />
-        );
-      case 'in progress':
-        return (
-          <View style={styles.statusCircleInProgress}>
-            <View style={[styles.statusCircleHalfFilled, { backgroundColor }]} />
-          </View>
-        );
-      case 'done':
-        return (
-          <View style={styles.statusCircleDone} />
-        );
-      default:
-        return <View style={styles.statusCircleTodo} />;
-    }
-  };
-
-  const handleCardPress = () => {
-    router.push({
-      pathname: '/task/[id]',
-      params: {
-        id: task.id,
-      },
-    });
-  };
-
-  return (
-    <ThemedView style={styles.taskCard}>
-      <View style={styles.taskHeader}>
-        <TouchableOpacity
-          onPress={() => onToggle(task.id)}
-          style={styles.statusCircleContainer}
-        >
-          {getStatusCircle()}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.taskContent}
-          onPress={handleCardPress}
-          activeOpacity={0.7}
-        >
-          <ThemedText
-            style={[
-              styles.taskTitle,
-              isDone && styles.taskTitleCompleted
-            ]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {task.title}
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.taskActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onDelete(task.id)}
-        >
-          <Trash2 size={16} color={textColor} />
-        </TouchableOpacity>
-      </View>
-    </ThemedView>
   );
 }
 
@@ -513,248 +257,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 24,
-    fontWeight: '600',
-    opacity: 0.4,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    marginTop: 8,
-    opacity: 0.3,
-  },
-  section: {
-    marginBottom: 0,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  statusGroup: {
-    marginBottom: 10,
-  },
-  statusGroupTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-    opacity: 0.6,
-    marginBottom: 8,
-  },
-  divider: {
-    height: 1,
-    marginBottom: 12,
-  },
-  taskCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 10,
-    borderRadius: 12,
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  taskHeader: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusCircleContainer: {
-    marginRight: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusCircleTodo: {
-    width: 18,
-    height: 18,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#999',
-    backgroundColor: 'transparent',
-  },
-  statusCircleInProgress: {
-    width: 18,
-    height: 18,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#fbbf24',
-    backgroundColor: '#fbbf24',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  statusCircleHalfFilled: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: '50%',
-    height: '100%',
-  },
-  statusCircleDone: {
-    width: 18,
-    height: 18,
-    borderRadius: 10,
-    backgroundColor: '#10b981',
-    borderWidth: 0,
-  },
-  taskContent: {
-    flex: 1,
-    minWidth: 0,
-    marginRight: 8,
-    paddingVertical: 4,
-  },
-  taskTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-  taskTitleCompleted: {
-    textDecorationLine: 'line-through',
-    opacity: 0.5,
-  },
-  taskActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionButton: {
-    padding: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  scrollContentEmpty: {
+    flexGrow: 1,
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  closeButton: {
-    fontSize: 24,
-    fontWeight: '300',
-    opacity: 0.6,
-  },
-  form: {
-    padding: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  priorityButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  priorityButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    alignItems: 'center',
-  },
-  priorityText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  priorityTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  statusButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statusButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  statusTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f0f0f0',
-  },
-  saveButton: {
-    // backgroundColor set dynamically
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
   },
 });

@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useColorScheme as useRNColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useColorScheme as useRNColorScheme } from 'react-native';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type EffectiveTheme = 'light' | 'dark';
 
+/**
+ * Context for managing app-wide theme preferences
+ */
 interface ThemeContextType {
   themeMode: ThemeMode;
   effectiveTheme: EffectiveTheme;
@@ -14,22 +17,30 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// AsyncStorage key for persisting theme preference
 const THEME_STORAGE_KEY = '@task_manager_theme_mode';
 
+/**
+ * ThemeProvider component that manages theme state and persistence
+ */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useRNColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Compute effective theme based on mode and system preference
-  const effectiveTheme: EffectiveTheme = React.useMemo(() => {
+  /**
+   * Calculate the effective theme based on user preference and system theme
+   */
+  const effectiveTheme: EffectiveTheme = useMemo(() => {
     if (themeMode === 'system') {
       return systemColorScheme === 'dark' ? 'dark' : 'light';
     }
     return themeMode;
   }, [themeMode, systemColorScheme]);
 
-  // Load theme preference from storage on mount
+  /**
+   * Load saved theme preference from AsyncStorage on mount
+   */
   useEffect(() => {
     const loadThemePreference = async () => {
       try {
@@ -38,7 +49,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setThemeModeState(stored as ThemeMode);
         }
       } catch (error) {
-        console.warn('Failed to load theme preference:', error);
+        console.error('Failed to load theme preference:', error);
       } finally {
         setIsHydrated(true);
       }
@@ -47,32 +58,37 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     loadThemePreference();
   }, []);
 
-  // Update theme mode and persist to storage
+  /**
+   * Update theme mode and persist to AsyncStorage
+   */
   const setThemeMode = useCallback(async (mode: ThemeMode) => {
     try {
       setThemeModeState(mode);
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
     } catch (error) {
-      console.warn('Failed to save theme preference:', error);
-      // Still update state even if storage fails
+      console.error('Failed to save theme preference:', error);
+      // Still update state even if storage fails to maintain UX
       setThemeModeState(mode);
     }
   }, []);
 
-  const value: ThemeContextType = {
+  const value: ThemeContextType = useMemo(
+    () => ({
     themeMode,
     effectiveTheme,
     setThemeMode,
     isSystemMode: themeMode === 'system',
-  };
-
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    }),
+    [themeMode, effectiveTheme, setThemeMode]
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
+/**
+ * Custom hook to access theme context
+ * @throws Error if used outside of ThemeProvider
+ */
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
@@ -80,6 +96,3 @@ export function useTheme() {
   }
   return context;
 }
-
-
-

@@ -3,6 +3,9 @@ import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { YStack, useTheme } from 'tamagui';
 
+/**
+ * Toast provider component that wraps the app to enable toast notifications
+ */
 export function AppToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider 
@@ -17,6 +20,9 @@ export function AppToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Current toast renderer with custom styling based on toast type
+ */
 function CurrentToast() {
   const toast = useToastState();
   const theme = useTheme();
@@ -28,7 +34,9 @@ function CurrentToast() {
   // Get toast type from customData or default to 'default'
   const toastType = (toast.customData as any)?.type || 'default';
 
-  // Define colors based on toast type
+  /**
+   * Get colors based on toast type (success, warning, error, default)
+   */
   const getToastColors = () => {
     switch (toastType) {
       case 'success':
@@ -105,6 +113,9 @@ function CurrentToast() {
   );
 }
 
+/**
+ * Toast viewport with safe area insets support
+ */
 function SafeToastViewport() {
   const { bottom } = useSafeAreaInsets();
   return (
@@ -118,4 +129,3 @@ function SafeToastViewport() {
     />
   );
 }
-

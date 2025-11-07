@@ -3,46 +3,36 @@ import { PrioritySelector } from '@/components/tasks/priority-selector';
 import { StatusSelector } from '@/components/tasks/status-selector';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SaveButton } from '@/components/ui/save-button';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { formatDate } from '@/utils/date-helpers';
+import type { TaskFormData } from '@/types/task';
 import { getInputBackgroundColor, sharedStyles } from '@/utils/shared-styles';
-import { executeOnDelete, executeOnUpdate } from '@/utils/task-callbacks';
+import { executeOnCreate } from '@/utils/task-callbacks';
 import { validateTaskForm } from '@/utils/validation-helpers';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Calendar, Trash2 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
+import React, { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 /**
- * Task details screen for viewing and editing task information
- * 
- * This screen allows full editing of task details. Changes are passed back
- * to the main screen via a callback function passed through route params.
+ * New Task Creation Screen
  */
-export default function TaskDetailsScreen() {
+export default function NewTaskScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{
-    id: string;
-    title: string;
-    description: string;
-    priority: 'low' | 'medium' | 'high';
-    status: 'todo' | 'in progress' | 'done';
-    createdAt: string;
-  }>();
-  
   const colorScheme = useColorScheme();
+
+  // Theme colors
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
+  const inputBackgroundColor = getInputBackgroundColor(colorScheme);
 
-  const [formData, setFormData] = useState({
-    title: params.title || '',
-    description: params.description || '',
-    priority: (params.priority || 'medium') as 'low' | 'medium' | 'high',
-    status: (params.status || 'todo') as 'todo' | 'in progress' | 'done',
+  // Form state
+  const [formData, setFormData] = useState<TaskFormData>({
+    title: '',
+    description: '',
+    priority: 'medium',
+    status: 'todo',
   });
 
   // Error state
@@ -52,43 +42,8 @@ export default function TaskDetailsScreen() {
   }>({});
   const [showErrors, setShowErrors] = useState(false);
 
-  // Delete confirmation dialog state
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
   /**
-   * Initialize form data from params - using individual param values as dependencies
-   * to avoid infinite loop from params object changing
-   */
-  useEffect(() => {
-    if (params.title) {
-      setFormData({
-        title: params.title,
-        description: params.description || '',
-        priority: (params.priority || 'medium') as 'low' | 'medium' | 'high',
-        status: (params.status || 'todo') as 'todo' | 'in progress' | 'done',
-      });
-    }
-  }, [params.id, params.title, params.description, params.priority, params.status]);
-
-  /**
-   * Show error state if required params are missing
-   */
-  if (!params.id) {
-    return (
-      <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <ThemedText type="title">Task not found</ThemedText>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={[sharedStyles.button, { backgroundColor: tintColor, marginTop: 20, paddingHorizontal: 24 }]}
-        >
-          <ThemedText lightColor="#fff" darkColor="#000">Go Back</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
-    );
-  }
-
-  /**
-   * Save changes and navigate back
+   * Handle save - pass data back via callback
    */
   const handleSave = () => {
     // Validate form data
@@ -98,7 +53,7 @@ export default function TaskDetailsScreen() {
       // Set errors and show them
       const newErrors: { title?: string; description?: string } = {};
       
-    if (!formData.title.trim()) {
+      if (!formData.title.trim()) {
         newErrors.title = 'Title is required';
       } else if (formData.title.trim().length < 3) {
         newErrors.title = 'Title must be at least 3 characters';
@@ -117,8 +72,8 @@ export default function TaskDetailsScreen() {
     setErrors({});
     setShowErrors(false);
 
-    // Execute update callback
-    executeOnUpdate(params.id, {
+    // Execute create callback
+    executeOnCreate({
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
@@ -131,40 +86,20 @@ export default function TaskDetailsScreen() {
   };
 
   /**
-   * Show delete confirmation dialog
+   * Handle cancel
    */
-  const handleDeletePress = () => {
-    setShowDeleteDialog(true);
-  };
-
-  /**
-   * Delete task after confirmation
-   */
-  const handleDeleteConfirm = () => {
-    setShowDeleteDialog(false);
-    // Execute delete callback
-    executeOnDelete(params.id);
-    // Navigate back to preserve the parent screen's state
+  const handleCancel = () => {
     router.back();
   };
 
-  /**
-   * Cancel delete operation
-   */
-  const handleDeleteCancel = () => {
-    setShowDeleteDialog(false);
-  };
-
-  const inputBackgroundColor = getInputBackgroundColor(colorScheme);
-
   return (
     <ThemedView style={[sharedStyles.container, { backgroundColor }]}>
-      {/* Header with Back and Delete Buttons */}
+      {/* Header with Back Button Only */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={handleCancel}
           style={[
-            styles.iconButton,
+            styles.backButton,
             { backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
           ]}
         >
@@ -172,32 +107,24 @@ export default function TaskDetailsScreen() {
         </TouchableOpacity>
         
         <ThemedText type="title" style={styles.headerTitle}>
-          Edit Task
+          New Task
         </ThemedText>
         
-        <TouchableOpacity
-          onPress={handleDeletePress}
-          style={[
-            styles.iconButton,
-            { backgroundColor: 'rgba(239, 68, 68, 0.1)' }
-          ]}
-        >
-          <Trash2 size={24} color="#ef4444" />
-        </TouchableOpacity>
+        {/* Empty spacer for alignment */}
+        <View style={styles.backButton} />
       </View>
 
       <ScrollView
         style={sharedStyles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Form Content */}
         <View style={sharedStyles.content}>
           {/* Title Input */}
           <FormInput
             label="Title"
-                  value={formData.title}
+            value={formData.title}
             onChangeText={(text) => {
               setFormData({ ...formData, title: text });
               // Clear error when user starts typing
@@ -205,8 +132,9 @@ export default function TaskDetailsScreen() {
                 setErrors({ ...errors, title: undefined });
               }
             }}
-                  placeholder="Enter task title"
+            placeholder="Enter task title"
             required
+            autoFocus
             textColor={textColor}
             inputBackgroundColor={inputBackgroundColor}
             error={errors.title}
@@ -216,7 +144,7 @@ export default function TaskDetailsScreen() {
           {/* Description Input */}
           <FormInput
             label="Description"
-                  value={formData.description}
+            value={formData.description}
             onChangeText={(text) => {
               setFormData({ ...formData, description: text });
               // Clear error when user starts typing
@@ -224,62 +152,37 @@ export default function TaskDetailsScreen() {
                 setErrors({ ...errors, description: undefined });
               }
             }}
-                  placeholder="Enter task description"
-                  multiline
-                  numberOfLines={6}
+            placeholder="Enter task description (optional)"
+            multiline
+            numberOfLines={4}
             textColor={textColor}
             inputBackgroundColor={inputBackgroundColor}
             error={errors.description}
             showError={showErrors}
-                />
+          />
 
-          {/* Status Selector */}
+          {/* Status Selection */}
           <StatusSelector
             value={formData.status}
             onChange={(status) => setFormData({ ...formData, status })}
             textColor={textColor}
           />
 
-          {/* Priority Selector */}
+          {/* Priority Selection */}
           <PrioritySelector
             value={formData.priority}
             onChange={(priority) => setFormData({ ...formData, priority })}
             textColor={textColor}
           />
-
-          {/* Created Date Display */}
-          {params.createdAt && (
-            <View style={[sharedStyles.section, sharedStyles.dateSection]}>
-              <Calendar size={16} color={textColor} opacity={0.6} />
-              <ThemedText style={sharedStyles.dateText}>
-                Created {formatDate(params.createdAt)}
-              </ThemedText>
-            </View>
-          )}
         </View>
       </ScrollView>
 
       {/* Sticky Save Button at Bottom */}
-      <SaveButton onPress={handleSave} label="Save Changes" />
-
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        visible={showDeleteDialog}
-        title="Delete Task"
-        message="Are you sure you want to delete this task? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        variant="danger"
-      />
+      <SaveButton onPress={handleSave} label="Save Task" />
     </ThemedView>
   );
 }
 
-/**
- * Additional styles specific to this screen
- */
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
@@ -295,7 +198,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
   },
-  iconButton: {
+  backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
