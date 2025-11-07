@@ -132,8 +132,8 @@ export default function TaskDetailsScreen() {
   return (
     <ThemedView style={{ flex: 1, backgroundColor }}>
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        style={{ flex: 1, backgroundColor }}
+        contentContainerStyle={{ paddingBottom: 40, backgroundColor }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header with Back Button */}
