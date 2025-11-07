@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     marginTop: 16,
-    height: 24,
+    height: 32,
   },
   scrollView: {
     flex: 1,
