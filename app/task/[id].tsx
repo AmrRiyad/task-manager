@@ -1,12 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Calendar, CheckCircle2, Circle, Clock, Flag, Pencil, Save, Trash2, X } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
+import { ArrowLeft, Calendar, Save, Trash2 } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Platform, ScrollView, TextInput } from 'react-native';
-import { Button, Card, H1, H3, Input, Paragraph, Separator, XStack, YStack } from 'tamagui';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, Card, H3, Input, Paragraph, Separator, XStack, YStack } from 'tamagui';
 
 import { ThemedView } from '@/components/themed-view';
-import { useTasks, Task } from '@/contexts/task-context';
+import { useTasks } from '@/contexts/task-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useToastController } from '@tamagui/toast';
@@ -15,7 +14,6 @@ export default function TaskDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   const { getTask, updateTask, deleteTask } = useTasks();
-  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
@@ -24,7 +22,6 @@ export default function TaskDetailsScreen() {
 
   const task = params.id ? getTask(params.id) : null;
 
-  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -114,7 +111,7 @@ export default function TaskDetailsScreen() {
       customData: { type: 'success' },
     });
 
-    setIsEditing(false);
+    router.back();
   };
 
   const handleDelete = () => {
@@ -126,18 +123,11 @@ export default function TaskDetailsScreen() {
   };
 
   const handleCancel = () => {
-    setFormData({
-      title: task.title,
-      description: task.description,
-      priority: task.priority,
-      status: task.status,
-    });
-    setIsEditing(false);
+    router.back();
   };
 
   const priorityColor = getPriorityColor(formData.priority);
   const statusColor = getStatusColor(formData.status);
-  const isDone = formData.status === 'done';
 
   return (
     <ThemedView style={{ flex: 1, backgroundColor }}>
@@ -149,9 +139,9 @@ export default function TaskDetailsScreen() {
         {/* Header with Back Button */}
         <XStack
           alignItems="center"
-          paddingTop={Platform.OS === 'ios' ? insets.top : 20}
-          paddingHorizontal="$4"
-          paddingBottom="$3"
+          paddingTop={Platform.OS === 'ios' ? 60 : 40}
+          paddingHorizontal={20}
+          paddingBottom={20}
           gap="$3"
         >
           <Button
@@ -164,44 +154,29 @@ export default function TaskDetailsScreen() {
           >
             <ArrowLeft size={24} color={textColor} />
           </Button>
-          <H3 flex={1} numberOfLines={1} ellipsizeMode="tail">
-            {isEditing ? 'Edit Task' : 'Task Details'}
+          <H3 
+            flex={1} 
+            numberOfLines={1} 
+            ellipsizeMode="tail"
+            fontSize={32}
+            fontWeight="700"
+            lineHeight={40}
+            color={textColor}
+          >
+            Edit Task
           </H3>
-          {isEditing ? (
-            <XStack gap="$2">
-              <Button
-                unstyled
-                onPress={handleCancel}
-                padding="$2"
-                borderRadius="$6"
-                pressStyle={{ opacity: 0.7 }}
-                backgroundColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}
-              >
-                <X size={20} color={textColor} />
-              </Button>
-              <Button
-                unstyled
-                onPress={handleSave}
-                padding="$2"
-                borderRadius="$6"
-                pressStyle={{ opacity: 0.7 }}
-                backgroundColor={tintColor}
-              >
-                <Save size={20} color="#fff" />
-              </Button>
-            </XStack>
-          ) : (
+          <XStack>
             <Button
               unstyled
-              onPress={() => setIsEditing(true)}
+              onPress={handleSave}
               padding="$2"
-              borderRadius="$6"
+              borderRadius="$5"
               pressStyle={{ opacity: 0.7 }}
-              backgroundColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}
+              backgroundColor={colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : tintColor + '20'}
             >
-              <Pencil size={20} color={tintColor} />
+              <Save size={24} color={tintColor} />
             </Button>
-          )}
+          </XStack>
         </XStack>
 
         <YStack padding="$4" gap="$4">
@@ -214,35 +189,23 @@ export default function TaskDetailsScreen() {
             borderColor={colorScheme === 'dark' ? '$borderColor' : '$borderColor'}
           >
             <Card.Header padded>
-              {isEditing ? (
-                <YStack gap="$2">
-                  <Paragraph fontSize="$2" color="$color10" fontWeight="500">
-                    Title
-                  </Paragraph>
-                  <Input
-                    value={formData.title}
-                    onChangeText={(text) => setFormData({ ...formData, title: text })}
-                    placeholder="Enter task title"
-                    fontSize="$6"
-                    fontWeight="700"
-                    borderWidth={1}
-                    borderColor={colorScheme === 'dark' ? '$borderColor' : '$borderColor'}
-                    backgroundColor={colorScheme === 'dark' ? '$backgroundHover' : '$backgroundHover'}
-                    color={textColor}
-                    placeholderTextColor={colorScheme === 'dark' ? '$color8' : '$color8'}
-                  />
-                </YStack>
-              ) : (
-                <H1
-                  fontSize="$9"
+              <YStack gap="$2">
+                <Paragraph fontSize="$2" color="$color10" fontWeight="500">
+                  Title
+                </Paragraph>
+                <Input
+                  value={formData.title}
+                  onChangeText={(text) => setFormData({ ...formData, title: text })}
+                  placeholder="Enter task title"
+                  fontSize="$6"
                   fontWeight="700"
-                  textDecorationLine={isDone ? 'line-through' : 'none'}
-                  opacity={isDone ? 0.6 : 1}
+                  borderWidth={1}
+                  borderColor={colorScheme === 'dark' ? '$borderColor' : '$borderColor'}
+                  backgroundColor={colorScheme === 'dark' ? '$backgroundHover' : '$backgroundHover'}
                   color={textColor}
-                >
-                  {formData.title}
-                </H1>
-              )}
+                  placeholderTextColor={colorScheme === 'dark' ? '$color8' : '$color8'}
+                />
+              </YStack>
             </Card.Header>
           </Card>
 
@@ -258,58 +221,38 @@ export default function TaskDetailsScreen() {
               minWidth={120}
             >
               <Card.Header padded>
-                {isEditing ? (
-                  <YStack gap="$2" width="100%">
-                    <Paragraph fontSize="$2" color="$color10" fontWeight="500">
-                      Status
-                    </Paragraph>
-                    <XStack gap="$2" flexWrap="wrap">
-                      {(['todo', 'in progress', 'done'] as const).map((status) => {
-                        const statusColorOption = getStatusColor(status);
-                        return (
-                          <Button
-                            key={status}
-                            flex={1}
-                            minWidth={90}
-                            size="$3"
-                            borderRadius="$4"
-                            backgroundColor={formData.status === status ? statusColorOption : 'transparent'}
-                            borderWidth={1}
-                            borderColor={statusColorOption}
-                            onPress={() => setFormData({ ...formData, status })}
-                            pressStyle={{ opacity: 0.7 }}
+                <YStack gap="$2" width="100%">
+                  <Paragraph fontSize="$2" color="$color10" fontWeight="500">
+                    Status
+                  </Paragraph>
+                  <XStack gap="$2" flexWrap="wrap">
+                    {(['todo', 'in progress', 'done'] as const).map((status) => {
+                      const statusColorOption = getStatusColor(status);
+                      return (
+                        <Button
+                          key={status}
+                          flex={1}
+                          minWidth={90}
+                          size="$3"
+                          borderRadius="$4"
+                          backgroundColor={formData.status === status ? statusColorOption : 'transparent'}
+                          borderWidth={1}
+                          borderColor={statusColorOption}
+                          onPress={() => setFormData({ ...formData, status })}
+                          pressStyle={{ opacity: 0.7 }}
+                        >
+                          <Paragraph
+                            fontSize="$3"
+                            fontWeight="600"
+                            color={formData.status === status ? '#fff' : statusColorOption}
                           >
-                            <Paragraph
-                              fontSize="$3"
-                              fontWeight="600"
-                              color={formData.status === status ? '#fff' : statusColorOption}
-                            >
-                              {getStatusLabel(status)}
-                            </Paragraph>
-                          </Button>
-                        );
-                      })}
-                    </XStack>
-                  </YStack>
-                ) : (
-                  <XStack alignItems="center" gap="$2">
-                    {formData.status === 'done' ? (
-                      <CheckCircle2 size={18} color={statusColor} />
-                    ) : formData.status === 'in progress' ? (
-                      <Clock size={18} color={statusColor} />
-                    ) : (
-                      <Circle size={18} color={statusColor} />
-                    )}
-                    <YStack gap="$1">
-                      <Paragraph fontSize="$2" color="$color10" fontWeight="500">
-                        Status
-                      </Paragraph>
-                      <Paragraph fontSize="$4" fontWeight="600" color={statusColor}>
-                        {getStatusLabel(formData.status)}
-                      </Paragraph>
-                    </YStack>
+                            {getStatusLabel(status)}
+                          </Paragraph>
+                        </Button>
+                      );
+                    })}
                   </XStack>
-                )}
+                </YStack>
               </Card.Header>
             </Card>
 
@@ -323,52 +266,38 @@ export default function TaskDetailsScreen() {
               minWidth={120}
             >
               <Card.Header padded>
-                {isEditing ? (
-                  <YStack gap="$2" width="100%">
-                    <Paragraph fontSize="$2" color="$color10" fontWeight="500">
-                      Priority
-                    </Paragraph>
-                    <XStack gap="$2" flexWrap="wrap">
-                      {(['low', 'medium', 'high'] as const).map((priority) => {
-                        const priorityColorOption = getPriorityColor(priority);
-                        return (
-                          <Button
-                            key={priority}
-                            flex={1}
-                            minWidth={80}
-                            size="$3"
-                            borderRadius="$4"
-                            backgroundColor={formData.priority === priority ? priorityColorOption : 'transparent'}
-                            borderWidth={1}
-                            borderColor={priorityColorOption}
-                            onPress={() => setFormData({ ...formData, priority })}
-                            pressStyle={{ opacity: 0.7 }}
+                <YStack gap="$2" width="100%">
+                  <Paragraph fontSize="$2" color="$color10" fontWeight="500">
+                    Priority
+                  </Paragraph>
+                  <XStack gap="$2" flexWrap="wrap">
+                    {(['low', 'medium', 'high'] as const).map((priority) => {
+                      const priorityColorOption = getPriorityColor(priority);
+                      return (
+                        <Button
+                          key={priority}
+                          flex={1}
+                          minWidth={80}
+                          size="$3"
+                          borderRadius="$4"
+                          backgroundColor={formData.priority === priority ? priorityColorOption : 'transparent'}
+                          borderWidth={1}
+                          borderColor={priorityColorOption}
+                          onPress={() => setFormData({ ...formData, priority })}
+                          pressStyle={{ opacity: 0.7 }}
+                        >
+                          <Paragraph
+                            fontSize="$3"
+                            fontWeight="600"
+                            color={formData.priority === priority ? '#fff' : priorityColorOption}
                           >
-                            <Paragraph
-                              fontSize="$3"
-                              fontWeight="600"
-                              color={formData.priority === priority ? '#fff' : priorityColorOption}
-                            >
-                              {getPriorityLabel(priority)}
-                            </Paragraph>
-                          </Button>
-                        );
-                      })}
-                    </XStack>
-                  </YStack>
-                ) : (
-                  <XStack alignItems="center" gap="$2">
-                    <Flag size={18} color={priorityColor} />
-                    <YStack gap="$1">
-                      <Paragraph fontSize="$2" color="$color10" fontWeight="500">
-                        Priority
-                      </Paragraph>
-                      <Paragraph fontSize="$4" fontWeight="600" color={priorityColor}>
-                        {getPriorityLabel(formData.priority)}
-                      </Paragraph>
-                    </YStack>
+                            {getPriorityLabel(priority)}
+                          </Paragraph>
+                        </Button>
+                      );
+                    })}
                   </XStack>
-                )}
+                </YStack>
               </Card.Header>
             </Card>
           </XStack>
@@ -387,37 +316,26 @@ export default function TaskDetailsScreen() {
                   Description
                 </H3>
                 <Separator />
-                {isEditing ? (
-                  <TextInput
-                    value={formData.description}
-                    onChangeText={(text) => setFormData({ ...formData, description: text })}
-                    placeholder="Enter task description"
-                    multiline
-                    numberOfLines={6}
-                    style={{
-                      fontSize: 16,
-                      lineHeight: 24,
-                      color: textColor,
-                      minHeight: 120,
-                      textAlignVertical: 'top',
-                      padding: 12,
-                      borderWidth: 1,
-                      borderColor: colorScheme === 'dark' ? '#333' : '#ddd',
-                      borderRadius: 8,
-                      backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
-                    }}
-                    placeholderTextColor={colorScheme === 'dark' ? '#666' : '#999'}
-                  />
-                ) : (
-                  <Paragraph
-                    fontSize="$4"
-                    lineHeight="$6"
-                    color={textColor}
-                    opacity={formData.description ? 0.8 : 0.5}
-                  >
-                    {formData.description || 'No description provided'}
-                  </Paragraph>
-                )}
+                <TextInput
+                  value={formData.description}
+                  onChangeText={(text) => setFormData({ ...formData, description: text })}
+                  placeholder="Enter task description"
+                  multiline
+                  numberOfLines={6}
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 24,
+                    color: textColor,
+                    minHeight: 120,
+                    textAlignVertical: 'top',
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: colorScheme === 'dark' ? '#333' : '#ddd',
+                    borderRadius: 8,
+                    backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                  }}
+                  placeholderTextColor={colorScheme === 'dark' ? '#666' : '#999'}
+                />
               </YStack>
             </Card.Header>
           </Card>
@@ -444,25 +362,23 @@ export default function TaskDetailsScreen() {
             </Card.Header>
           </Card>
 
-          {/* Action Buttons - Only show when not editing */}
-          {!isEditing && (
-            <XStack gap="$3" marginTop="$2">
-              <Button
-                flex={1}
-                theme="red"
-                size="$4"
-                borderRadius="$6"
-                onPress={handleDelete}
-              >
-                <XStack alignItems="center" gap="$2">
-                  <Trash2 size={18} color="#fff" />
-                  <Paragraph color="#fff" fontWeight="600">
-                    Delete
-                  </Paragraph>
-                </XStack>
-              </Button>
-            </XStack>
-          )}
+          {/* Delete Button */}
+          <XStack gap="$3" marginTop="$2">
+            <Button
+              flex={1}
+              theme="red"
+              size="$4"
+              borderRadius="$6"
+              onPress={handleDelete}
+            >
+              <XStack alignItems="center" gap="$2">
+                <Trash2 size={18} color="#fff" />
+                <Paragraph color="#fff" fontWeight="600">
+                  Delete
+                </Paragraph>
+              </XStack>
+            </Button>
+          </XStack>
         </YStack>
       </ScrollView>
     </ThemedView>

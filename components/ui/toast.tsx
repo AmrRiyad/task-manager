@@ -79,7 +79,8 @@ function CurrentToast() {
       shadowOffset={{ width: 0, height: 2 }}
       shadowOpacity={0.25}
       shadowRadius={3.84}
-      elevation={5}
+      elevation={10}
+      zIndex={10000}
     >
     <YStack gap={4} alignItems="center">
     <Toast.Title 
@@ -108,10 +109,12 @@ function SafeToastViewport() {
   const { bottom } = useSafeAreaInsets();
   return (
     <ToastViewport
-    bottom={bottom + 20}
-    left={0}
-    right={0}
-    alignItems="center"
+      bottom={bottom + 20}
+      left={0}
+      right={0}
+      alignItems="center"
+      zIndex={9999}
+      pointerEvents="box-none"
     />
   );
 }

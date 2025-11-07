@@ -4,11 +4,12 @@ import { TabsAdvanced } from '@/components/ui/tabs';
 import { Task, useTasks } from '@/contexts/task-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useToastController } from '@tamagui/toast';
+import { ToastViewport, useToastController } from '@tamagui/toast';
 import { useRouter } from 'expo-router';
-import { Pencil, SquarePen, Trash2 } from 'lucide-react-native';
+import { SquarePen, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const { tasks, addTask, updateTask, deleteTask, toggleTask } = useTasks();
@@ -140,7 +141,13 @@ export default function HomeScreen() {
         <View style={styles.headerTop}>
           <ThemedText type="title" style={styles.headerTitle}>My Tasks</ThemedText>
           <TouchableOpacity
-            style={styles.headerButton}
+            style={[
+              styles.headerButton,
+              {
+                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : tintColor + '20',
+                borderRadius: 12,
+              }
+            ]}
             onPress={() => openModal()}
             activeOpacity={0.7}
           >
@@ -203,7 +210,6 @@ export default function HomeScreen() {
                     key={task.id}
                     task={task}
                     onToggle={toggleTask}
-                    onEdit={openModal}
                     onDelete={handleDeleteTask}
                     getPriorityColor={getPriorityColor}
                     textColor={textColor}
@@ -219,9 +225,8 @@ export default function HomeScreen() {
               <TaskCard
                 key={task.id}
                 task={task}
-                onToggle={toggleTask}
-                onEdit={openModal}
-                onDelete={deleteTask}
+                    onToggle={toggleTask}
+                    onDelete={deleteTask}
                 getPriorityColor={getPriorityColor}
                 textColor={textColor}
               />
@@ -238,6 +243,8 @@ export default function HomeScreen() {
         onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
+          {/* Toast Viewport inside Modal to ensure it appears above */}
+          <ModalToastViewport />
           <ThemedView style={styles.modalContent}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
@@ -281,27 +288,36 @@ export default function HomeScreen() {
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Priority</ThemedText>
                 <View style={styles.priorityButtons}>
-                  {(['low', 'medium', 'high'] as const).map((priority) => (
-                    <TouchableOpacity
-                      key={priority}
-                      style={[
-                        styles.priorityButton,
-                        formData.priority === priority && {
-                          backgroundColor: getPriorityColor(priority),
-                        }
-                      ]}
-                      onPress={() => setFormData({ ...formData, priority })}
-                    >
-                      <ThemedText
+                  {(['low', 'medium', 'high'] as const).map((priority) => {
+                    const priorityColor = getPriorityColor(priority);
+                    const isSelected = formData.priority === priority;
+                    return (
+                      <TouchableOpacity
+                        key={priority}
                         style={[
-                          styles.priorityText,
-                          formData.priority === priority && styles.priorityTextActive
+                          styles.priorityButton,
+                          {
+                            borderColor: isSelected ? priorityColor : '#ddd',
+                            borderWidth: isSelected ? 3 : 1,
+                            backgroundColor: backgroundColor,
+                          }
                         ]}
+                        onPress={() => setFormData({ ...formData, priority })}
                       >
-                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
+                        <ThemedText
+                          style={[
+                            styles.priorityText,
+                            { 
+                              color: isSelected ? priorityColor : textColor,
+                              fontWeight: isSelected ? '800' : '500',
+                            }
+                          ]}
+                        >
+                          {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
 
@@ -309,29 +325,36 @@ export default function HomeScreen() {
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Status</ThemedText>
                 <View style={styles.statusButtons}>
-                  {(['todo', 'in progress', 'done'] as const).map((status) => (
-                    <TouchableOpacity
-                      key={status}
-                      style={[
-                        styles.statusButton,
-                        { backgroundColor: backgroundColor },
-                        formData.status === status && {
-                          backgroundColor: getStatusColor(status),
-                        }
-                      ]}
-                      onPress={() => setFormData({ ...formData, status })}
-                    >
-                      <ThemedText
+                  {(['todo', 'in progress', 'done'] as const).map((status) => {
+                    const statusColor = getStatusColor(status);
+                    const isSelected = formData.status === status;
+                    return (
+                      <TouchableOpacity
+                        key={status}
                         style={[
-                          styles.statusText,
-                          { color: textColor },
-                          formData.status === status && styles.statusTextActive
+                          styles.statusButton,
+                          {
+                            borderColor: isSelected ? statusColor : '#ddd',
+                            borderWidth: isSelected ? 3 : 1,
+                            backgroundColor: backgroundColor,
+                          }
                         ]}
+                        onPress={() => setFormData({ ...formData, status })}
                       >
-                        {status === 'in progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1)}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
+                        <ThemedText
+                          style={[
+                            styles.statusText,
+                            { 
+                              color: isSelected ? statusColor : textColor,
+                              fontWeight: isSelected ? '800' : '500',
+                            }
+                          ]}
+                        >
+                          {status === 'in progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1)}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
 
@@ -360,16 +383,30 @@ export default function HomeScreen() {
   );
 }
 
+function ModalToastViewport() {
+  const { bottom } = useSafeAreaInsets();
+  return (
+    <ToastViewport
+      bottom={bottom + 20}
+      left={0}
+      right={0}
+      alignItems="center"
+      zIndex={10001}
+      pointerEvents="box-none"
+      position="absolute"
+    />
+  );
+}
+
 interface TaskCardProps {
   task: Task;
   onToggle: (id: string) => void;
-  onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   getPriorityColor: (priority: string) => string;
   textColor: string;
 }
 
-function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColor }: TaskCardProps) {
+function TaskCard({ task, onToggle, onDelete, getPriorityColor, textColor }: TaskCardProps) {
   const router = useRouter();
   const isDone = task.status === 'done';
   const backgroundColor = useThemeColor({}, 'background');
@@ -431,12 +468,6 @@ function TaskCard({ task, onToggle, onEdit, onDelete, getPriorityColor, textColo
         </TouchableOpacity>
       </View>
       <View style={styles.taskActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onEdit(task)}
-        >
-          <Pencil size={16} color={textColor} />
-        </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => onDelete(task.id)}
@@ -549,16 +580,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statusCircleTodo: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: '#999',
     backgroundColor: 'transparent',
   },
   statusCircleInProgress: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: '#fbbf24',
@@ -574,8 +605,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   statusCircleDone: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 10,
     backgroundColor: '#10b981',
     borderWidth: 0,
