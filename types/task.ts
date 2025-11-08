@@ -18,6 +18,11 @@ export type TaskStatus = 'todo' | 'in progress' | 'done';
 export type StatusFilter = 'all' | 'todo' | 'in progress' | 'done';
 
 /**
+ * Task sort options
+ */
+export type SortOption = 'priority' | 'newest' | 'oldest';
+
+/**
  * Task interface representing a single task item
  */
 export interface Task {

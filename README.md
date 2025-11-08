@@ -73,6 +73,14 @@ Use the tab bar at the top of the task list to filter:
 - **In Progress** - View tasks currently being worked on
 - **Done** - View completed tasks
 
+### Sorting Tasks
+
+1. Tap the **three dots icon** (⋮) next to the add task button in the header
+2. A bottom sheet will appear with sort options:
+   - **Priority** - Sort tasks by priority (High → Medium → Low)
+   - **Newest First** - Show most recently created tasks first
+   - **Oldest First** - Show oldest tasks first
+
 ### Changing Theme
 
 1. Navigate to the **Settings** tab
@@ -96,6 +104,7 @@ Use the tab bar at the top of the task list to filter:
 
 - 🌓 **Theme Support** - Light, Dark, and System theme modes with persistent preferences
 - 🔍 **Smart Filtering** - Filter tasks by status (All, Todo, In Progress, Done)
+- 📊 **Task Sorting** - Sort tasks by Priority, Newest First, or Oldest First with independent sorting per category
 - 🎯 **Priority Levels** - Low, Medium, and High priority indicators
 - 📊 **Status Tracking** - Visual indicators for task status (Todo, In Progress, Done)
 - 🔔 **Toast Notifications** - Success, warning, and error feedback for all actions
@@ -143,6 +152,7 @@ task-manager/
 │   │   ├── confirm-dialog.tsx   # Confirmation dialog component
 │   │   ├── dropdown-selector.tsx # Reusable dropdown selector
 │   │   ├── save-button.tsx      # Sticky save button component
+│   │   ├── sort-bottom-sheet.tsx # Sort options bottom sheet
 │   │   ├── tabs.tsx             # Custom tab component
 │   │   └── toast.tsx            # Toast notification system
 │   ├── themed-text.tsx          # Theme-aware text component

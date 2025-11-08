@@ -4,6 +4,7 @@ import { TaskList } from '@/components/tasks/task-list';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { SortBottomSheet, type SortOption } from '@/components/ui/sort-bottom-sheet';
 import { CustomTabs } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/toast';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -12,7 +13,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import type { StatusFilter, Task, TaskStatus } from '@/types/task';
 import { setTaskCallbacks } from '@/utils/task-callbacks';
 import { useRouter } from 'expo-router';
-import { SquarePen } from 'lucide-react-native';
+import { EllipsisVertical, SquarePen } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -40,6 +41,8 @@ export default function HomeScreen() {
 
   // UI state
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [sortSheetVisible, setSortSheetVisible] = useState(false);
   
   // Delete confirmation dialog state
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
@@ -115,17 +118,46 @@ export default function HomeScreen() {
     });
   }, [router, updateTask, deleteTask, toast]);
 
+  // Sort tasks based on selected option
+  const sortTasks = useCallback((tasksToSort: Task[]): Task[] => {
+    const sorted = [...tasksToSort];
+    
+    switch (sortOption) {
+      case 'priority':
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        return sorted.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+      
+      case 'newest':
+        return sorted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      case 'oldest':
+        return sorted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      
+      default:
+        return sorted;
+    }
+  }, [sortOption]);
+
   // Get filtered tasks based on current filter
   const filteredTasks = useMemo(
-    () => getFilteredTasks(statusFilter),
-    [getFilteredTasks, statusFilter]
+    () => sortTasks(getFilteredTasks(statusFilter)),
+    [getFilteredTasks, statusFilter, sortTasks]
   );
 
-  // Get grouped tasks for 'all' view
-  const groupedTasks = useMemo(
-    () => statusFilter === 'all' ? getGroupedTasks : null,
-    [statusFilter, getGroupedTasks]
-  );
+  // Get grouped tasks for 'all' view with sorting applied to each group
+  const groupedTasks = useMemo(() => {
+    if (statusFilter !== 'all') return null;
+    
+    const grouped = getGroupedTasks;
+    const sortedGrouped: Record<string, Task[]> = {};
+    
+    // Sort each status group independently
+    Object.keys(grouped).forEach((status) => {
+      sortedGrouped[status] = sortTasks(grouped[status]);
+    });
+    
+    return sortedGrouped;
+  }, [statusFilter, getGroupedTasks, sortTasks]);
 
   // Calculate task counts for each status
   const taskCounts = useMemo(() => {
@@ -144,22 +176,37 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor }]}>
       {/* Header */}
       <ThemedView style={styles.header}>
-        {/* Title and Add Button */}
+        {/* Title and Action Buttons */}
         <View style={styles.headerTop}>
           <ThemedText type="title" style={styles.headerTitle}>My Tasks</ThemedText>
-          <TouchableOpacity
-            style={[
-              styles.headerButton,
-              {
-                backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : tintColor + '20',
-                borderRadius: 12,
-              }
-            ]}
-            onPress={handleCreateTask}
-            activeOpacity={0.7}
-          >
-            <SquarePen size={24} color={tintColor} />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={[
+                styles.headerButton,
+                {
+                  backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : tintColor + '20',
+                  borderRadius: 12,
+                }
+              ]}
+              onPress={() => setSortSheetVisible(true)}
+              activeOpacity={0.7}
+            >
+              <EllipsisVertical size={24} color={tintColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.headerButton,
+                {
+                  backgroundColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : tintColor + '20',
+                  borderRadius: 12,
+                }
+              ]}
+              onPress={handleCreateTask}
+              activeOpacity={0.7}
+            >
+              <SquarePen size={24} color={tintColor} />
+            </TouchableOpacity>
+          </View>
         </View>
         
         {/* Status Filter Tabs */}
@@ -219,6 +266,14 @@ export default function HomeScreen() {
         onCancel={handleDeleteCancel}
         variant="danger"
       />
+
+      {/* Sort Bottom Sheet */}
+      <SortBottomSheet
+        visible={sortSheetVisible}
+        currentSort={sortOption}
+        onClose={() => setSortSheetVisible(false)}
+        onSelect={setSortOption}
+      />
     </View>
   );
 }
@@ -237,6 +292,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 32,
