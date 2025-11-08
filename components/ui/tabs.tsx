@@ -1,17 +1,19 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   Animated,
   LayoutChangeEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
   useColorScheme,
+  View,
 } from 'react-native';
 
 export interface Tab {
   value: string;
   label: string;
+  count?: number;
 }
 
 export interface CustomTabsProps {
@@ -23,6 +25,7 @@ export interface CustomTabsProps {
   inactiveColor?: string;
   backgroundColor?: string;
   underlineColor?: string;
+  counterColor?: string;
 }
 
 interface TabLayout {
@@ -43,6 +46,7 @@ export const CustomTabs: React.FC<CustomTabsProps> = ({
   inactiveColor,
   backgroundColor,
   underlineColor,
+  counterColor,
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -52,7 +56,7 @@ export const CustomTabs: React.FC<CustomTabsProps> = ({
   const defaultInactiveColor = inactiveColor || (isDark ? '#a0a0a0' : '#8e8e93');
   const defaultBackgroundColor = backgroundColor || (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)');
   const defaultUnderlineColor = underlineColor || (isDark ? '#ffffff' : '#007AFF');
-
+  const defaultCounterColor = counterColor || (isDark ? '#000000' : '#ffffff');
   // Animation values
   const indicatorPosition = React.useRef(new Animated.Value(0)).current;
   const indicatorWidth = React.useRef(new Animated.Value(0)).current;
@@ -110,7 +114,11 @@ export const CustomTabs: React.FC<CustomTabsProps> = ({
   if (variant === 'underline') {
     return (
       <View style={styles.underlineWrapper}>
-        <View style={styles.underlineTabsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.underlineTabsContainer}
+        >
           {tabs.map((tab) => {
             const isActive = tab.value === value;
             return (
@@ -121,21 +129,46 @@ export const CustomTabs: React.FC<CustomTabsProps> = ({
                 style={styles.underlineTab}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    {
-                      color: isActive ? defaultActiveColor : defaultInactiveColor,
-                      fontWeight: isActive ? '600' : '400',
-                    },
-                  ]}
-                >
-                  {tab.label}
-                </Text>
+                <View style={styles.tabContent}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      {
+                        color: isActive ? defaultActiveColor : defaultInactiveColor,
+                        fontWeight: isActive ? '600' : '400',
+                      },
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                  {tab.count !== undefined && (
+                    <View
+                      style={[
+                        styles.counter,
+                        {
+                          backgroundColor: isActive
+                            ? defaultActiveColor
+                            : defaultInactiveColor,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.counterText,
+                          {
+                            color: defaultCounterColor,
+                          },
+                        ]}
+                      >
+                        {tab.count}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
         
         {/* Underline indicator */}
         <View style={[styles.underlineContainer, { borderBottomColor: isDark ? '#333' : '#e5e5e5' }]}>
@@ -159,7 +192,11 @@ export const CustomTabs: React.FC<CustomTabsProps> = ({
    */
   return (
     <View style={[styles.container, styles.backgroundContainer]}>
-      <View style={styles.backgroundTabsContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.backgroundTabsContainer}
+      >
         {/* Background indicator */}
         <Animated.View
           style={[
@@ -182,21 +219,46 @@ export const CustomTabs: React.FC<CustomTabsProps> = ({
               style={styles.backgroundTab}
               activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  {
-                    color: isActive ? defaultActiveColor : defaultInactiveColor,
-                    fontWeight: isActive ? '600' : '400',
-                  },
-                ]}
-              >
-                {tab.label}
-              </Text>
+              <View style={styles.tabContent}>
+                <Text
+                  style={[
+                    styles.tabText,
+                    {
+                      color: isActive ? defaultActiveColor : defaultInactiveColor,
+                      fontWeight: isActive ? '600' : '400',
+                    },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+                {tab.count !== undefined && (
+                  <View
+                    style={[
+                      styles.counter,
+                      {
+                        backgroundColor: isActive
+                          ? defaultActiveColor
+                          : defaultInactiveColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.counterText,
+                        {
+                          color: defaultCounterColor,
+                        },
+                      ]}
+                    >
+                      {tab.count}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
-          );
-        })}
-      </View>
+            );
+          })}
+      </ScrollView>
     </View>
   );
 };
@@ -254,8 +316,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 2,
   },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   tabText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  counter: {
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
+  counterText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

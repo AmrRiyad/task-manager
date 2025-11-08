@@ -135,6 +135,16 @@ export default function HomeScreen() {
     [statusFilter, getGroupedTasks]
   );
 
+  // Calculate task counts for each status
+  const taskCounts = useMemo(() => {
+    return {
+      all: tasks.length,
+      todo: tasks.filter(t => t.status === 'todo').length,
+      'in progress': tasks.filter(t => t.status === 'in progress').length,
+      done: tasks.filter(t => t.status === 'done').length,
+    };
+  }, [tasks]);
+
   // Status order for display
   const statusOrder: TaskStatus[] = ['todo', 'in progress', 'done'];
 
@@ -167,15 +177,16 @@ export default function HomeScreen() {
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as StatusFilter)}
           tabs={[
-            { value: 'all', label: 'All Tasks' },
-            { value: 'todo', label: 'Todo' },
-            { value: 'in progress', label: 'In Progress' },
-            { value: 'done', label: 'Done' },
+            { value: 'all', label: 'All', count: taskCounts.all },
+            { value: 'todo', label: 'Todo', count: taskCounts.todo },
+            { value: 'in progress', label: 'In Progress', count: taskCounts['in progress'] },
+            { value: 'done', label: 'Done', count: taskCounts.done },
           ]}
-          variant="underline"
+          variant="background"
           activeColor={tintColor}
           inactiveColor={mutedTextColor}
-          underlineColor={tintColor}
+          backgroundColor={colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : tintColor + '20'}
+          counterColor={colorScheme === 'dark' ? '#000000' : '#ffffff'}
         />
         </View>
       </ThemedView>
