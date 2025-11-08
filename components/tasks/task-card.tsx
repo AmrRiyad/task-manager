@@ -1,10 +1,11 @@
 import React, { memo } from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Check, Trash2 } from 'lucide-react-native';
+import { Check, SignalHigh, SignalLow, SignalMedium } from 'lucide-react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getPriorityColor } from '@/utils/task-helpers';
 import type { Task } from '@/types/task';
 
 interface TaskCardProps {
@@ -76,14 +77,22 @@ function TaskCardComponent({ task, onDelete, onView }: TaskCardProps) {
         </TouchableOpacity>
       </View>
       
-      {/* Delete button */}
+      {/* Priority indicator */}
       <View style={styles.taskActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onDelete(task.id)}
-        >
-          <Trash2 size={16} color={textColor} />
-        </TouchableOpacity>
+        {(() => {
+          const PriorityIcon = task.priority === 'low' 
+            ? SignalLow 
+            : task.priority === 'medium' 
+            ? SignalMedium 
+            : SignalHigh;
+          const priorityColor = getPriorityColor(task.priority);
+          
+          return (
+            <View style={styles.priorityIconContainer}>
+              <PriorityIcon size={18} color={priorityColor} />
+            </View>
+          );
+        })()}
       </View>
     </ThemedView>
   );
@@ -170,8 +179,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  actionButton: {
+  priorityIconContainer: {
     padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
