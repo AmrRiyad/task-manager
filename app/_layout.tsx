@@ -4,13 +4,11 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { TamaguiProvider } from 'tamagui';
 
-import { AppToastProvider } from '@/components/ui/toast';
+import { ToastProvider } from '@/components/ui/toast';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useTheme } from '@/contexts/theme-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import config from '@/tamagui.config';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -21,7 +19,6 @@ export const unstable_settings = {
  */
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
-  const { effectiveTheme } = useTheme();
   
   // Get background color from theme
   const backgroundColor = Colors[colorScheme].background;
@@ -46,43 +43,38 @@ function RootLayoutContent() {
   };
 
   return (
-    <TamaguiProvider 
-      config={config} 
-      defaultTheme={effectiveTheme === 'dark' ? 'dark' : 'light'}
-    >
-      <NavigationThemeProvider value={colorScheme === 'dark' ? customDarkTheme : customLightTheme}>
-        <View style={{ flex: 1, backgroundColor }}>
-          <AppToastProvider>
-            <Stack
-              screenOptions={{
+    <NavigationThemeProvider value={colorScheme === 'dark' ? customDarkTheme : customLightTheme}>
+      <View style={{ flex: 1, backgroundColor }}>
+        <ToastProvider>
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor },
+            }}
+          >
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen 
+              name="task/new" 
+              options={{ 
+                headerShown: false, 
+                presentation: 'card',
                 contentStyle: { backgroundColor },
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen 
-                name="task/new" 
-                options={{ 
-                  headerShown: false, 
-                  presentation: 'card',
-                  contentStyle: { backgroundColor },
-                  animation: 'slide_from_right',
-                }} 
-              />
-              <Stack.Screen 
-                name="task/[id]" 
-                options={{ 
-                  headerShown: false, 
-                  presentation: 'card',
-                  contentStyle: { backgroundColor },
-                  animation: 'slide_from_right',
-                }} 
-              />
-            </Stack>
-            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          </AppToastProvider>
-        </View>
-      </NavigationThemeProvider>
-    </TamaguiProvider>
+                animation: 'slide_from_right',
+              }} 
+            />
+            <Stack.Screen 
+              name="task/[id]" 
+              options={{ 
+                headerShown: false, 
+                presentation: 'card',
+                contentStyle: { backgroundColor },
+                animation: 'slide_from_right',
+              }} 
+            />
+          </Stack>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        </ToastProvider>
+      </View>
+    </NavigationThemeProvider>
   );
 }
 

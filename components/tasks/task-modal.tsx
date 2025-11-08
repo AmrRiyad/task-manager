@@ -1,8 +1,6 @@
 import React, { memo } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SignalHigh, SignalLow, SignalMedium } from 'lucide-react-native';
-import { ToastViewport } from '@tamagui/toast';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getPriorityColor, getStatusColor, getStatusLabel } from '@/utils/task-helpers';
@@ -20,23 +18,6 @@ interface TaskModalProps {
   tintColor: string;
 }
 
-/**
- * Toast viewport component positioned inside modal
- */
-function ModalToastViewport() {
-  const { bottom } = useSafeAreaInsets();
-  return (
-    <ToastViewport
-      bottom={bottom + 20}
-      left={0}
-      right={0}
-      alignItems="center"
-      zIndex={10001}
-      pointerEvents="box-none"
-      position="absolute"
-    />
-  );
-}
 
 /**
  * Task creation/editing modal component
@@ -60,7 +41,6 @@ function TaskModalComponent({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <ModalToastViewport />
         <ThemedView style={styles.modalContent}>
           {/* Modal Header */}
           <View style={styles.modalHeader}>

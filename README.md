@@ -111,7 +111,6 @@ Use the tab bar at the top of the task list to filter:
 
 ### UI Libraries
 
-- **Tamagui** (^1.136.1) - Universal UI kit with animations
 - **Lucide React Native** (^0.552.0) - Beautiful icon library
 - **React Navigation** (^7.1.8) - Navigation infrastructure
 
@@ -172,4 +171,3 @@ task-manager/
 
 - Built with [Expo](https://expo.dev)
 - Icons by [Lucide](https://lucide.dev)
-- UI components powered by [Tamagui](https://tamagui.dev)

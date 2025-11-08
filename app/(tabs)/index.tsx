@@ -5,12 +5,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { CustomTabs } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/toast';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTasks } from '@/hooks/use-tasks';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import type { StatusFilter, Task, TaskStatus } from '@/types/task';
 import { setTaskCallbacks } from '@/utils/task-callbacks';
-import { useToastController } from '@tamagui/toast';
 import { useRouter } from 'expo-router';
 import { SquarePen } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
   const dividerColor = colorScheme === 'dark' ? '#2a2a2a' : '#e5e5e5';
-  const toast = useToastController();
+  const toast = useToast();
   const mutedTextColor = colorScheme === 'dark' ? '#a0a0a0' : '#8e8e93';
   // Task management hook
   const { 
@@ -52,9 +52,7 @@ export default function HomeScreen() {
     setTaskCallbacks({
       onCreate: (taskData: Omit<Task, 'id' | 'createdAt'>) => {
         addTask(taskData);
-        toast.show('Task created successfully', {
-          customData: { type: 'success' },
-        });
+        toast.show('Task created successfully', { type: 'success' });
       },
     });
 
@@ -75,9 +73,7 @@ export default function HomeScreen() {
   const handleDeleteConfirm = useCallback(() => {
     if (taskToDelete) {
       deleteTask(taskToDelete);
-      toast.show('Task deleted successfully', {
-        customData: { type: 'success' },
-      });
+      toast.show('Task deleted successfully', { type: 'success' });
     }
     setDeleteDialogVisible(false);
     setTaskToDelete(null);
@@ -98,15 +94,11 @@ export default function HomeScreen() {
     setTaskCallbacks({
       onUpdate: (id: string, updates: Partial<Task>) => {
         updateTask(id, updates);
-        toast.show('Task updated successfully', {
-          customData: { type: 'success' },
-        });
+        toast.show('Task updated successfully', { type: 'success' });
       },
       onDelete: (id: string) => {
         deleteTask(id);
-        toast.show('Task deleted successfully', {
-          customData: { type: 'success' },
-        });
+        toast.show('Task deleted successfully', { type: 'success' });
       },
     });
 
