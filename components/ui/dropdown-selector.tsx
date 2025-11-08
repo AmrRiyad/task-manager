@@ -17,6 +17,7 @@ export interface DropdownOption {
   value: string;
   label: string;
   color?: string;
+  icon?: React.ComponentType<{ size?: number; color?: string }>;
 }
 
 interface DropdownSelectorProps {
@@ -164,14 +165,19 @@ export const DropdownSelector = memo<DropdownSelectorProps>(({
                       activeOpacity={0.7}
                     >
                       <View style={styles.menuItemContent}>
-                        {option.color && (
+                        {option.icon ? (
+                          <option.icon 
+                            size={20} 
+                            color={isSelected ? tintColor : textColor} 
+                          />
+                        ) : option.color ? (
                           <View
                             style={[
                               styles.colorDot,
                               { backgroundColor: option.color },
                             ]}
                           />
-                        )}
+                        ) : null}
                         <ThemedText
                           style={[
                             styles.menuItemText,
